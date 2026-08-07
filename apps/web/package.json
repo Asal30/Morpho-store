@@ -1,0 +1,38 @@
+{
+  "name": "@morpho/web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint . --max-warnings=0",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "5.2.2",
+    "@react-three/drei": "10.7.8",
+    "@react-three/fiber": "9.4.0",
+    "gsap": "3.15.0",
+    "ky": "1.10.0",
+    "motion": "13.0.0",
+    "next": "16.3.0",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "react-hook-form": "7.71.1",
+    "three": "0.185.1",
+    "zod": "4.3.6",
+    "zustand": "5.0.11"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/node": "^22.0.0",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@types/three": "0.184.1",
+    "eslint": "9.39.4",
+    "eslint-config-next": "16.3.0",
+    "tailwindcss": "4.3.3",
+    "typescript": "5.9.3"
+  }
+}

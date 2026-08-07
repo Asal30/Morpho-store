@@ -1,0 +1,72 @@
+name: morpho-store
+
+services:
+  db:
+    image: mariadb:11.8
+    restart: unless-stopped
+    environment:
+      MARIADB_DATABASE: ${DB_NAME:-morpho_store}
+      MARIADB_USER: ${DB_USER:-morpho}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-morpho_local}
+      MARIADB_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-morpho_root_local}
+    ports:
+      - "${DB_PORT:-3306}:3306"
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  api:
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    restart: unless-stopped
+    environment:
+      ENVIRONMENT: development
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+      CORS_ORIGINS: '["${FRONTEND_URL:-http://localhost:3000}"]'
+      DB_HOST: db
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-morpho_store}
+      DB_USER: ${DB_USER:-morpho}
+      DB_PASSWORD: ${DB_PASSWORD:-morpho_local}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./services/api/app:/app/app
+      - ./services/api/migrations:/app/migrations
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+      WATCHPACK_POLLING: "true"
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./apps/web:/workspace/apps/web
+      - web_node_modules:/workspace/node_modules
+      - web_app_node_modules:/workspace/apps/web/node_modules
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  mariadb_data:
+  web_node_modules:
+  web_app_node_modules:
