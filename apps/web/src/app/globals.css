@@ -96,10 +96,12 @@ p {
   text-wrap: pretty;
 }
 
-a {
-  color: inherit;
-  text-decoration-thickness: 0.0625rem;
-  text-underline-offset: 0.2em;
+@layer base {
+  a {
+    color: inherit;
+    text-decoration-thickness: 0.0625rem;
+    text-underline-offset: 0.2em;
+  }
 }
 
 img,
