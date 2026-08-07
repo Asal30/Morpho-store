@@ -2,29 +2,49 @@
 .env
 .env.*
 !.env.example
+!.env.sample
+*.local
 
 # Node / Next.js
 node_modules/
 .next/
 out/
+build/
+dist/
+coverage/
 *.tsbuildinfo
 npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.pnpm-store/
+.turbo/
+.vercel/
+.eslintcache
 
 # Python
 __pycache__/
 *.py[cod]
+*$py.class
 .pytest_cache/
+.mypy_cache/
 .ruff_cache/
+.pytype/
 .venv/
+venv/
+env/
 *.egg-info/
-dist/
+.eggs/
+pip-wheel-metadata/
+
+# Docker and local data
+docker-data/
+mysql-data/
+postgres-data/
+*.sqlite3
 
 # Editors and OS
 .idea/
 .vscode/
 .DS_Store
 Thumbs.db
-
-# Local data
-mysql-data/
-coverage/
