@@ -4,7 +4,7 @@ MORPHO is a premium Sri Lankan T-shirt brand built around the idea **“Wear You
 
 ## Architecture
 
-The monorepo contains a Next.js presentation application and a FastAPI business API. FastAPI owns all business/domain data and the MariaDB schema; Alembic owns migrations. Next.js may evolve BFF/server-side behavior, but it does not access the relational database directly. See [docs/architecture.md](docs/architecture.md).
+The repository contains a Next.js frontend and a FastAPI backend. FastAPI owns all business/domain data and the MariaDB schema; Alembic owns migrations. Next.js may evolve BFF/server-side behavior, but it does not access the relational database directly. See [docs/architecture.md](docs/architecture.md).
 
 ## Technology stack
 
@@ -18,12 +18,12 @@ The monorepo contains a Next.js presentation application and a FastAPI business 
 ## Folder structure
 
 ```text
-apps/web/             Next.js application
+frontend/             Next.js customer-facing application
   src/app/            routes and global styles
   src/components/     reusable UI/layout/shared components
   src/features/       feature-oriented frontend modules
   src/services/       external API clients
-services/api/         FastAPI application
+backend/              FastAPI domain application
   app/api/            HTTP routes
   app/core/           configuration and cross-cutting concerns
   app/db/             SQLAlchemy infrastructure
@@ -50,6 +50,7 @@ Copy `.env.example` to `.env` and replace the development passwords. Compose rea
 ## Frontend startup
 
 ```bash
+cd frontend
 npm install
 npm run dev
 ```
@@ -58,14 +59,11 @@ Open http://localhost:3000.
 
 ## Backend startup
 
-From `services/api`:
+From `backend`:
 
 ```bash
-python -m venv .venv
-# Windows: .venv\Scripts\activate
-# macOS/Linux: source .venv/bin/activate
-python -m pip install -e ".[dev]"
-uvicorn app.main:app --reload
+uv sync --extra dev
+uv run uvicorn app.main:app --reload
 ```
 
 Open http://localhost:8000/health or http://localhost:8000/docs.
@@ -80,12 +78,12 @@ This starts web (`:3000`), API (`:8000`), and MariaDB (`:3306`). Stop it with `d
 
 ## Database and migration workflow
 
-FastAPI/SQLAlchemy owns models and Alembic owns schema history. From `services/api`, with database environment variables set:
+FastAPI/SQLAlchemy owns models and Alembic owns schema history. From `backend`, with database environment variables set:
 
 ```bash
-alembic revision --autogenerate -m "describe change"
-alembic upgrade head
-alembic downgrade -1
+uv run alembic revision --autogenerate -m "describe change"
+uv run alembic upgrade head
+uv run alembic downgrade -1
 ```
 
 Review generated migrations before applying them. Do not add database access to the Next.js application.
@@ -93,11 +91,12 @@ Review generated migrations before applying them. Do not add database access to 
 ## Quality commands
 
 ```bash
+cd frontend
 npm run lint
 npm run typecheck
 npm run build
-cd services/api
-ruff check .
-pytest
-python -c "from app.main import app; print(app.title)"
+cd ../backend
+uv run ruff check .
+uv run pytest
+uv run python -c "from app.main import app; print(app.title)"
 ```

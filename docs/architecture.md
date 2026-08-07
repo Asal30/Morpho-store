@@ -18,7 +18,7 @@ The API separates HTTP routes (`api`), settings and cross-cutting policy (`core`
 
 ## Data and migrations
 
-SQLAlchemy 2 is the persistence layer and MariaDB/MySQL is the relational store. Models are imported through `app.models` so Alembic can discover metadata. Schema changes are generated, reviewed, and applied from `services/api`; application startup never creates tables implicitly.
+SQLAlchemy 2 is the persistence layer and MariaDB/MySQL is the relational store. Models are imported through `app.models` so Alembic can discover metadata. Schema changes are generated, reviewed, and applied from `backend`; application startup never creates tables implicitly.
 
 ## Configuration and security
 
