@@ -34,9 +34,9 @@ export function ProductCard({
           {getCategoryLabel(product.category)}
         </p>
         <div className="mt-1 flex items-start justify-between gap-3">
-          <h2 className="font-display text-2xl leading-tight font-medium text-primary sm:text-3xl">
+          <h3 className="font-display text-2xl leading-tight font-medium text-primary sm:text-3xl">
             {product.name}
-          </h2>
+          </h3>
           <p className="pt-1 text-xs font-semibold whitespace-nowrap text-foreground-soft sm:text-sm">
             <ProductPrice prices={product.prices} />
           </p>
@@ -55,4 +55,3 @@ export function ProductCard({
     </article>
   );
 }
-

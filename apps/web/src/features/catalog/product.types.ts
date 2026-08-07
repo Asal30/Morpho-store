@@ -26,9 +26,23 @@ export interface ProductPrice {
 export interface ProductOption {
   id: string;
   label: string;
+  /** Use only when an authoritative visual color value is available. */
+  swatch?: string;
 }
 
 export type ProductAvailability = "available" | "unavailable";
+
+export type ProductPricing = Partial<Record<CurrencyCode, ProductPrice>>;
+
+export interface ProductVariant {
+  /** Stable identifier used by the future cart contract. */
+  id: string;
+  colorId: string;
+  sizeId: string;
+  availability: ProductAvailability;
+  /** Optional intentional overrides; unspecified currencies use the product price. */
+  prices?: ProductPricing;
+}
 
 export interface Product {
   id: string;
@@ -39,7 +53,7 @@ export interface Product {
   images: ProductImages;
   colors: readonly ProductOption[];
   sizes: readonly ProductOption[];
-  prices: Partial<Record<CurrencyCode, ProductPrice>>;
+  prices: ProductPricing;
+  variants: readonly ProductVariant[];
   availability?: ProductAvailability;
 }
-

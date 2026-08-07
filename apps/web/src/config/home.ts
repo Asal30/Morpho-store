@@ -43,7 +43,7 @@ export const collections = [
     eyebrow: "Contrast / Motion",
     href: "/shop?category=raglan",
     image: {
-      src: `${heroBase}/DSC02189.JPG`,
+      src: `${heroBase}/morpho-17.webp`,
       alt: "Two MORPHO models photographed together outdoors",
     },
     position: "center 44%",
@@ -59,11 +59,11 @@ export const collections = [
 
 export const lookbookImages = {
   lead: {
-    src: `${heroBase}/DSC02267.JPG`,
+    src: `${heroBase}/morpho-21.webp`,
     alt: "MORPHO campaign portrait in a pink T-shirt",
   },
   detail: {
-    src: `${heroBase}/DSC02312.JPG`,
+    src: `${heroBase}/morpho-23.webp`,
     alt: "Back artwork photographed in the MORPHO campaign",
   },
   group: {

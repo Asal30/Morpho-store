@@ -5,7 +5,7 @@ export function ProductGrid({ products }: Readonly<{ products: readonly Product[
   return (
     <div className="grid grid-cols-2 gap-x-3 gap-y-10 sm:gap-x-6 md:grid-cols-3 lg:gap-x-8 lg:gap-y-16">
       {products.map((product) => (
-        <ProductCard key={product.id} product={product} />
+        <ProductCard key={product.id} product={product} href={`/shop/${product.slug}`} />
       ))}
     </div>
   );

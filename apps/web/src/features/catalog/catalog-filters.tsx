@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -158,12 +159,12 @@ export function CatalogFilters({
           </div>
 
           <div className="grid grid-cols-2 gap-3 border-t border-border px-5 py-4 sm:px-8">
-            <a
+            <Link
               href="/shop"
               className="inline-flex min-h-12 items-center justify-center rounded-control border border-border-strong text-xs font-semibold tracking-[0.14em] uppercase no-underline"
             >
               Clear
-            </a>
+            </Link>
             <Button type="submit">View pieces</Button>
           </div>
         </form>
