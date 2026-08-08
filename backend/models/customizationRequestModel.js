@@ -22,6 +22,12 @@ const customizationRequestModel = mongoose.Schema(
             required : true,
             enum : ["2XS", "XS", "S", "M", "L", "XL", "2XL"]
         },
+        quantity : {
+            type : Number,
+            required : true,
+            default : 1,
+            min : 1
+        },
         color : {
             type : String,
             required : true,
@@ -29,10 +35,77 @@ const customizationRequestModel = mongoose.Schema(
         },
         artwork : [
             {
-                type : String,
-                trim : true
+                url : {
+                    type : String,
+                    required : true,
+                    trim : true
+                },
+                secureUrl : {
+                    type : String,
+                    required : true,
+                    trim : true
+                },
+                publicId : {
+                    type : String,
+                    required : true,
+                    trim : true
+                },
+                originalFilename : {
+                    type : String,
+                    required : true,
+                    trim : true
+                },
+                placement : {
+                    type : String,
+                    required : true,
+                    enum : ["front", "back"]
+                },
+                format : {
+                    type : String,
+                    required : true,
+                    enum : ["png", "jpg", "jpeg", "webp"]
+                },
+                width : {
+                    type : Number,
+                    required : true,
+                    min : 1
+                },
+                height : {
+                    type : Number,
+                    required : true,
+                    min : 1
+                }
             }
         ],
+        customText : {
+            text : {
+                type : String,
+                maxlength : 80,
+                trim : true
+            },
+            font : {
+                type : String,
+                enum : ["Manrope", "Cormorant Garamond", "Arial"]
+            },
+            fontSize : {
+                type : Number,
+                min : 8,
+                max : 96
+            },
+            color : {
+                type : String,
+                maxlength : 20,
+                trim : true
+            },
+            alignment : {
+                type : String,
+                enum : ["left", "center", "right"]
+            },
+            placement : {
+                type : String,
+                enum : ["front", "back"]
+            }
+        },
         description : {
             type : String,
             required : true,
@@ -44,6 +117,16 @@ const customizationRequestModel = mongoose.Schema(
         },
         price : {
             type : Number,
+            min : 0
+        },
+        unitPrice : {
+            type : Number,
+            required : true,
+            min : 0
+        },
+        totalPrice : {
+            type : Number,
+            required : true,
             min : 0
         },
         status : {

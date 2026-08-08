@@ -14,19 +14,38 @@ const orderModel = mongoose.Schema(
         },
         items : [
             {
+                type : {
+                    type : String,
+                    required : true,
+                    enum : ["normal", "custom"],
+                    default : "normal"
+                },
                 item : {
                     type : mongoose.Schema.Types.ObjectId,
                     ref : "items",
-                    required : true
+                    required : function () {
+                        return this.type === "normal"
+                    }
+                },
+                customization : {
+                    type : mongoose.Schema.Types.ObjectId,
+                    ref : "customizationRequests",
+                    required : function () {
+                        return this.type === "custom"
+                    }
                 },
                 itemID : {
                     type : String,
-                    required : true,
+                    required : function () {
+                        return this.type === "normal"
+                    },
                     trim : true
                 },
                 name : {
                     type : String,
-                    required : true,
+                    required : function () {
+                        return this.type === "normal"
+                    },
                     trim : true
                 },
                 size : {
@@ -48,6 +67,36 @@ const orderModel = mongoose.Schema(
                     type : Number,
                     required : true,
                     min : 0
+                },
+                totalPrice : {
+                    type : Number,
+                    required : true,
+                    min : 0
+                },
+                customizationSnapshot : {
+                    requestID : { type : String, trim : true },
+                    category : { type : String, enum : ["Oversize", "Raglan"] },
+                    color : { type : String, enum : ["Black", "White", "Navy Blue", "Aqua Blue", "Mint Green", "Baby Pink", "Yellow", "Blue", "Red", "Pink"] },
+                    size : { type : String, enum : ["2XS", "XS", "S", "M", "L", "XL", "2XL"] },
+                    artwork : [
+                        {
+                            secureUrl : String,
+                            publicId : String,
+                            originalFilename : String,
+                            placement : { type : String, enum : ["front", "back"] },
+                            format : String,
+                            width : Number,
+                            height : Number
+                        }
+                    ],
+                    customText : {
+                        text : String,
+                        font : String,
+                        fontSize : Number,
+                        color : String,
+                        alignment : String,
+                        placement : String
+                    }
                 }
             }
         ],

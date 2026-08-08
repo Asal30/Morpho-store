@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import Item from "../models/itemModel.js";
+import CustomizationRequest from "../models/customizationRequestModel.js";
 import Order from "../models/orderModel.js";
 import { handleControllerError, isValidObjectId, pick, sendData, sendError } from "../utilities/http.js";
 
@@ -16,6 +17,42 @@ export async function createOrder(req, res) {
 
         const snapshots = []
         for (const requestedItem of req.body.items) {
+            if (requestedItem.customization) {
+                if (!isValidObjectId(requestedItem.customization)) return sendError(res, 400, "Invalid customization ID")
+                const customization = await CustomizationRequest.findOne({
+                    _id : requestedItem.customization,
+                    customer : req.user._id,
+                    status : { $ne : "cancelled" }
+                })
+                if (!customization) return sendError(res, 400, "A customization is unavailable")
+                snapshots.push({
+                    type : "custom",
+                    customization : customization._id,
+                    size : customization.size,
+                    color : customization.color,
+                    quantity : customization.quantity,
+                    unitPrice : customization.unitPrice,
+                    totalPrice : customization.totalPrice,
+                    customizationSnapshot : {
+                        requestID : customization.requestID,
+                        category : customization.category,
+                        color : customization.color,
+                        size : customization.size,
+                        artwork : customization.artwork.map((artwork) => ({
+                            secureUrl : artwork.secureUrl,
+                            publicId : artwork.publicId,
+                            originalFilename : artwork.originalFilename,
+                            placement : artwork.placement,
+                            format : artwork.format,
+                            width : artwork.width,
+                            height : artwork.height
+                        })),
+                        customText : customization.customText
+                    }
+                })
+                continue
+            }
+
             if (!isValidObjectId(requestedItem.item)) return sendError(res, 400, "Invalid item ID")
             const item = await Item.findById(requestedItem.item)
             if (!item || !item.isAvailable) return sendError(res, 400, "An order item is unavailable")
@@ -29,17 +66,19 @@ export async function createOrder(req, res) {
             }
 
             snapshots.push({
+                type : "normal",
                 item : item._id,
                 itemID : item.itemID,
                 name : item.name,
                 size : requestedItem.size,
                 color : item.color,
                 quantity,
-                unitPrice : item.price
+                unitPrice : item.price,
+                totalPrice : item.price * quantity
             })
         }
 
-        const subtotal = snapshots.reduce((total, item) => total + item.unitPrice * item.quantity, 0)
+        const subtotal = snapshots.reduce((total, item) => total + item.totalPrice, 0)
         const deliveryFee = 0
         const contact = pick(req.body, ["customerName", "email", "phone", "whatsApp", "shippingAddress", "paymentMethod", "notes"])
 

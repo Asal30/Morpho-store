@@ -1,9 +1,10 @@
 import Cart from "../models/cartModel.js";
+import CustomizationRequest from "../models/customizationRequestModel.js";
 import Item from "../models/itemModel.js";
 import { handleControllerError, isValidObjectId, sendData, sendError } from "../utilities/http.js";
 
 async function loadCart(userId) {
-    return Cart.findOne({ user : userId }).populate("items.item")
+    return Cart.findOne({ user : userId }).populate(["items.item", "items.customization"])
 }
 
 export async function getCart(req, res) {
@@ -27,12 +28,54 @@ export async function addCartItem(req, res) {
 
         let cart = await Cart.findOne({ user : req.user._id })
         if (!cart) cart = new Cart({ user : req.user._id, items : [] })
-        const existing = cart.items.find((entry) => entry.item.equals(item._id) && entry.size === req.body.size)
+        const existing = cart.items.find((entry) => entry.item?.equals(item._id) && entry.size === req.body.size)
         if (existing) existing.quantity += quantity
-        else cart.items.push({ item : item._id, size : req.body.size, quantity })
+        else cart.items.push({ type : "normal", item : item._id, size : req.body.size, quantity })
         await cart.save()
 
         return sendData(res, await loadCart(req.user._id), 201)
+    } catch (error) {
+        return handleControllerError(error, res)
+    }
+}
+
+export async function addCustomizationToCart(req, res) {
+    try {
+        if (!isValidObjectId(req.params.customizationId)) return sendError(res, 400, "Invalid customization ID")
+        const customization = await CustomizationRequest.findOne({
+            _id : req.params.customizationId,
+            customer : req.user._id,
+            status : { $ne : "cancelled" }
+        })
+        if (!customization) return sendError(res, 404, "Customization not found")
+
+        let cart = await Cart.findOne({ user : req.user._id })
+        if (!cart) cart = new Cart({ user : req.user._id, items : [] })
+        const existing = cart.items.find((entry) => entry.customization?.equals(customization._id))
+        if (!existing) {
+            cart.items.push({
+                type : "custom",
+                customization : customization._id,
+                quantity : customization.quantity
+            })
+            await cart.save()
+        }
+        return sendData(res, await loadCart(req.user._id), 201)
+    } catch (error) {
+        return handleControllerError(error, res)
+    }
+}
+
+export async function removeCustomizationFromCart(req, res) {
+    try {
+        if (!isValidObjectId(req.params.customizationId)) return sendError(res, 400, "Invalid customization ID")
+        const cart = await Cart.findOne({ user : req.user._id })
+        if (!cart) return sendError(res, 404, "Cart not found")
+        const originalLength = cart.items.length
+        cart.items = cart.items.filter((entry) => !entry.customization?.equals(req.params.customizationId))
+        if (cart.items.length === originalLength) return sendError(res, 404, "Customized cart item not found")
+        await cart.save()
+        return sendData(res, await loadCart(req.user._id))
     } catch (error) {
         return handleControllerError(error, res)
     }
@@ -43,7 +86,7 @@ export async function updateCartItem(req, res) {
         if (!isValidObjectId(req.params.itemId)) return sendError(res, 400, "Invalid item ID")
         const cart = await Cart.findOne({ user : req.user._id })
         if (!cart) return sendError(res, 404, "Cart not found")
-        const entry = cart.items.find((value) => value.item.equals(req.params.itemId) && (!req.body.currentSize || value.size === req.body.currentSize))
+        const entry = cart.items.find((value) => value.item?.equals(req.params.itemId) && (!req.body.currentSize || value.size === req.body.currentSize))
         if (!entry) return sendError(res, 404, "Cart item not found")
 
         if (req.body.size !== undefined) {
@@ -70,7 +113,7 @@ export async function removeCartItem(req, res) {
         const cart = await Cart.findOne({ user : req.user._id })
         if (!cart) return sendError(res, 404, "Cart not found")
         const originalLength = cart.items.length
-        cart.items = cart.items.filter((entry) => !entry.item.equals(req.params.itemId))
+        cart.items = cart.items.filter((entry) => !entry.item?.equals(req.params.itemId))
         if (cart.items.length === originalLength) return sendError(res, 404, "Cart item not found")
         await cart.save()
         return sendData(res, await loadCart(req.user._id))

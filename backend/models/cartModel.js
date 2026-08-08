@@ -10,14 +10,31 @@ const cartModel = mongoose.Schema(
         },
         items : [
             {
+                type : {
+                    type : String,
+                    required : true,
+                    enum : ["normal", "custom"],
+                    default : "normal"
+                },
                 item : {
                     type : mongoose.Schema.Types.ObjectId,
                     ref : "items",
-                    required : true
+                    required : function () {
+                        return this.type === "normal"
+                    }
+                },
+                customization : {
+                    type : mongoose.Schema.Types.ObjectId,
+                    ref : "customizationRequests",
+                    required : function () {
+                        return this.type === "custom"
+                    }
                 },
                 size : {
                     type : String,
-                    required : true,
+                    required : function () {
+                        return this.type === "normal"
+                    },
                     enum : ["2XS", "XS", "S", "M", "L", "XL", "2XL"]
                 },
                 quantity : {

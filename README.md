@@ -1,12 +1,10 @@
 # MORPHO Store
 
-MORPHO is a premium Sri Lankan T-shirt storefront. This repository currently contains the existing Next.js frontend only.
+MORPHO is a premium Sri Lankan T-shirt storefront with a Next.js frontend and an Express/Mongoose backend.
 
 ## Current status
 
-The previous backend implementation and its database infrastructure have been removed. A replacement backend will be designed and built in the next project phase.
-
-The storefront UI remains intact and currently uses an isolated placeholder catalog while the future API is absent. The former administration UI and its frontend proxy have been removed.
+The storefront currently includes a placeholder catalog plus an end-to-end T-shirt customization flow. Customer artwork is uploaded through the authenticated backend to Cloudinary, while garment mockups remain replaceable frontend project assets.
 
 ## Technology
 
@@ -15,11 +13,15 @@ The storefront UI remains intact and currently uses an isolated placeholder cata
 - TypeScript
 - App Router
 - Tailwind CSS 4
+- Node.js / Express
+- MongoDB / Mongoose
+- Cloudinary
 
 ## Repository structure
 
 ```text
 frontend/        Existing storefront application
+backend/         Express API, Mongoose models, and customization upload pipeline
 docs/            Current architecture/status documentation
 infrastructure/  Infrastructure placeholders
 ```
@@ -39,6 +41,26 @@ npm run dev
 
 Open http://localhost:3000.
 
+Copy `frontend/.env.example` to `frontend/.env.local` and set the API URL.
+
+## Backend setup
+
+```bash
+cd backend
+npm install
+```
+
+Copy `backend/.env.example` to `backend/.env` and configure MongoDB, JWT, and Cloudinary credentials. Then run `npm start`. The API defaults to http://localhost:4200.
+
+## Customizer mockups
+
+Replace mockups using the same filenames under:
+
+- `frontend/public/images/customizer/mockups/oversize/`
+- `frontend/public/images/customizer/mockups/raglan/`
+
+No database or code change is required when image geometry stays the same. If geometry changes, adjust only the normalized print areas in `frontend/src/features/customizer/customization-config.ts`.
+
 ## Frontend verification
 
 ```bash
@@ -56,4 +78,4 @@ The Compose file currently starts only the frontend development service:
 docker compose up --build
 ```
 
-No API or database service is included in this cleanup phase.
+The current Compose file remains frontend-only; run the backend separately until its deployment configuration is added.
