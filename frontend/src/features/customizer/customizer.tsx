@@ -173,6 +173,11 @@ export function Customizer() {
 
   return (
     <div className="grid gap-10 lg:grid-cols-[minmax(20rem,0.78fr)_minmax(0,1.22fr)] lg:items-start">
+      <div className="lg:sticky lg:top-28">
+        <TshirtPreview color={color} side={activeSide} artworkUrl={artworkUrls[activeSide]} customText={customText} />
+        <p className="mt-3 text-xs leading-5 text-muted">Preview placement is proportional to the replaceable garment mockup. Final print positioning is reviewed by MORPHO production.</p>
+      </div>
+      
       <div className="space-y-9 lg:order-1">
         <fieldset>
           <legend className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">1. Garment</legend>
@@ -235,11 +240,6 @@ export function Customizer() {
         {error ? <p role="alert" className="text-sm text-destructive">{error} {error.startsWith("Sign in") ? <Link href="/account?redirect=/customize" className="font-semibold">Sign in</Link> : null}</p> : null}
         {success ? <p role="status" className="text-sm text-success">{success} <Link href="/cart" className="font-semibold">View cart</Link></p> : null}
         <Button size="lg" className="w-full" disabled={saving || !quote} onClick={submit}>{saving ? "Uploading & saving…" : "Add custom design to cart"}</Button>
-      </div>
-
-      <div className="lg:sticky lg:top-28">
-        <TshirtPreview color={color} side={activeSide} artworkUrl={artworkUrls[activeSide]} customText={customText} />
-        <p className="mt-3 text-xs leading-5 text-muted">Preview placement is proportional to the replaceable garment mockup. Final print positioning is reviewed by MORPHO production.</p>
       </div>
     </div>
   );
