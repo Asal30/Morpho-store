@@ -9,7 +9,8 @@ interface ProductListResponse {
 }
 
 function apiUrl(path: string): string {
-  const baseUrl = process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const baseUrl = process.env.API_INTERNAL_URL ?? process.env.NEXT_PUBLIC_API_URL;
+  if (!baseUrl) throw new Error("Catalog API is not configured");
   return `${baseUrl.replace(/\/$/, "")}${path}`;
 }
 

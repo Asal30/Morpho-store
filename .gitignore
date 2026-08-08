@@ -22,15 +22,8 @@ pnpm-debug.log*
 .vercel/
 .eslintcache
 
-# Local tool caches
-__pycache__/
-.venv/
-.*_cache/
-
 # Docker and local data
 docker-data/
-mongo-data/
-storage/uploads/
 *.sqlite3
 
 # Editors and OS

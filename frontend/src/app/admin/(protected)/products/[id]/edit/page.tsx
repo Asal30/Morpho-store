@@ -2,11 +2,11 @@ import { notFound } from "next/navigation";
 
 import type { AdminProduct, CatalogOptions } from "@/features/admin/admin.types";
 import { ProductForm } from "@/features/admin/product-form";
-import { adminServerFetch, backendUrl } from "@/lib/admin-api";
+import { adminServerFetch, apiUrl } from "@/lib/admin-api";
 
 export default async function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const [productResponse, optionsResponse] = await Promise.all([adminServerFetch(`/products/${id}`), fetch(backendUrl("/api/catalog/options"), { cache: "no-store" })]);
+  const [productResponse, optionsResponse] = await Promise.all([adminServerFetch(`/products/${id}`), fetch(apiUrl("/api/catalog/options"), { cache: "no-store" })]);
   if (productResponse.status === 404) notFound();
   const product = (await productResponse.json()) as AdminProduct;
   const options = (await optionsResponse.json()) as CatalogOptions;

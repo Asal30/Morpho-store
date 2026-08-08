@@ -1,45 +1,35 @@
 # MORPHO Store
 
-MORPHO is a premium Sri Lankan T-shirt storefront built with Next.js and a Node.js domain API.
+MORPHO is a premium Sri Lankan T-shirt storefront. This repository currently contains the existing Next.js frontend only.
 
-## Architecture
+## Current status
 
-- `frontend/`: Next.js 16, React 19, TypeScript, App Router and Tailwind CSS
-- `backend/`: Node.js 22, JavaScript ES modules, Express, Mongoose and Zod
-- Database: MongoDB 8
-- Media: provider-independent metadata in MongoDB; local filesystem adapter for development
+The previous backend implementation and its database infrastructure have been removed. A replacement backend will be designed and built in the next project phase.
 
-The frontend never connects to MongoDB. Express owns catalog rules, pricing, product management, media metadata and administrator sessions.
+The storefront and administration UI remain intact. Screens that load catalog or administrator data still retain their frontend integration boundaries, but require the future API before those data-dependent flows can run end to end.
 
-## Prerequisites
+## Technology
+
+- Next.js 16
+- React 19
+- TypeScript
+- App Router
+- Tailwind CSS 4
+
+## Repository structure
+
+```text
+frontend/        Existing storefront and administration application
+docs/            Current architecture/status documentation
+infrastructure/  Infrastructure placeholders
+```
+
+## Frontend setup
+
+Requirements:
 
 - Node.js 22+
 - npm 10+
-- MongoDB 8, or Docker Desktop with Compose
-
-## Environment
-
-Copy `.env.example` to `.env`. Generate a bcrypt administrator password hash from `backend/`:
-
-```bash
-npm install
-npm run hash-password -- "your-password"
-```
-
-Set the result as `ADMIN_PASSWORD_HASH` and generate a random `SESSION_SECRET` of at least 32 characters. Secrets must not use `NEXT_PUBLIC_*` variables.
-
-## Local startup
-
-Start MongoDB, then run:
-
-```bash
-cd backend
-npm install
-npm run seed
-npm run dev
-```
-
-In a second terminal:
 
 ```bash
 cd frontend
@@ -47,28 +37,23 @@ npm install
 npm run dev
 ```
 
-Open the storefront at http://localhost:3000, the admin login at http://localhost:3000/admin/login, and API health at http://localhost:8000/health.
+Open http://localhost:3000.
 
-The seed command is idempotent and creates only garment, theme, color, size and pricing reference data. It does not create products.
+## Frontend verification
 
-## Docker Compose
+```bash
+cd frontend
+npm run lint
+npm run typecheck
+npm run build
+```
+
+## Docker
+
+The Compose file currently starts only the frontend development service:
 
 ```bash
 docker compose up --build
 ```
 
-This starts `frontend`, `backend`, and `mongodb`. Uploaded development media and MongoDB data use named volumes.
-
-## Quality commands
-
-```bash
-cd backend
-npm run lint
-npm test
-npm run build
-
-cd ../frontend
-npm run lint
-npm run typecheck
-npm run build
-```
+No API or database service is included in this cleanup phase.

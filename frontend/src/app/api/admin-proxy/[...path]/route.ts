@@ -1,10 +1,10 @@
 import type { NextRequest } from "next/server";
 
-import { backendUrl } from "@/lib/admin-api";
+import { apiUrl } from "@/lib/admin-api";
 
 async function proxy(request: NextRequest, context: { params: Promise<{ path: string[] }> }) {
   const { path } = await context.params;
-  const target = new URL(backendUrl(`/api/admin/${path.join("/")}`));
+  const target = new URL(apiUrl(`/api/admin/${path.join("/")}`));
   target.search = request.nextUrl.search;
   const headers = new Headers();
   const contentType = request.headers.get("content-type");

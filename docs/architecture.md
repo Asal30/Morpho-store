@@ -1,25 +1,7 @@
-# MORPHO Store architecture
+# MORPHO Store architecture status
 
-MORPHO is a monorepo with independently deployable frontend and backend applications.
+The repository currently contains only the existing Next.js frontend.
 
-```text
-Browser -> Next.js frontend/BFF -> Express domain API -> MongoDB
-```
+The former API and database implementation have been removed. Frontend catalog and administration modules still define the integration boundary expected by the UI, but there is intentionally no server implementation in this cleanup phase.
 
-## Ownership
-
-The Next.js application owns presentation and browser interaction. It reads catalog data from the Express API and proxies authenticated administrator mutations. It never connects directly to MongoDB.
-
-The JavaScript Express application owns product rules, reference data, integer minor-unit pricing, media metadata, administrator authentication and all MongoDB writes. Mongoose defines persistence models and Zod validates HTTP input.
-
-## Domain storage
-
-Reference collections hold garment definitions, themes and pricing rules. Products retain stable UUID `productId` and variant IDs while MongoDB `_id` values remain persistence details. Images are ordered subdocuments containing delivery metadata; binary files are stored by a replaceable storage adapter, not in MongoDB.
-
-## Security
-
-Administrator passwords are bcrypt hashes supplied through the environment. Successful login creates an opaque server-side session whose token is stored only as a keyed digest. The browser receives an HttpOnly, Strict SameSite cookie and a separate CSRF token for mutations. Production cookies are Secure.
-
-## Operations
-
-The idempotent JavaScript seed script upserts reference data and authoritative pricing without creating products. Docker Compose runs `frontend`, `backend`, and `mongodb`, with named volumes for database and development media persistence.
+The next backend phase must establish the API contract and infrastructure separately. Until then, data-dependent storefront and administration routes require an external compatible API to operate.
