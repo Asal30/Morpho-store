@@ -6,7 +6,7 @@ MORPHO is a premium Sri Lankan T-shirt storefront. This repository currently con
 
 The previous backend implementation and its database infrastructure have been removed. A replacement backend will be designed and built in the next project phase.
 
-The storefront and administration UI remain intact. Screens that load catalog or administrator data still retain their frontend integration boundaries, but require the future API before those data-dependent flows can run end to end.
+The storefront UI remains intact and currently uses an isolated placeholder catalog while the future API is absent. The former administration UI and its frontend proxy have been removed.
 
 ## Technology
 
@@ -19,7 +19,7 @@ The storefront and administration UI remain intact. Screens that load catalog or
 ## Repository structure
 
 ```text
-frontend/        Existing storefront and administration application
+frontend/        Existing storefront application
 docs/            Current architecture/status documentation
 infrastructure/  Infrastructure placeholders
 ```

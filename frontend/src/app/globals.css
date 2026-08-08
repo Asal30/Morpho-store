@@ -138,10 +138,6 @@ select {
   color: var(--color-primary);
 }
 
-body:has([data-admin-root]) [data-storefront-chrome] {
-  display: none;
-}
-
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;

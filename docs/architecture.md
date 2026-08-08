@@ -2,6 +2,6 @@
 
 The repository currently contains only the existing Next.js frontend.
 
-The former API and database implementation have been removed. Frontend catalog and administration modules still define the integration boundary expected by the UI, but there is intentionally no server implementation in this cleanup phase.
+The former API and database implementation have been removed. The storefront currently uses an isolated placeholder catalog, and the former administration routes, components, and frontend proxy have been removed.
 
-The next backend phase must establish the API contract and infrastructure separately. Until then, data-dependent storefront and administration routes require an external compatible API to operate.
+The next backend phase must establish the API contract and infrastructure separately. The storefront catalog boundary can be reconnected when that API is available.
