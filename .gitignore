@@ -22,25 +22,15 @@ pnpm-debug.log*
 .vercel/
 .eslintcache
 
-# Python
+# Local tool caches
 __pycache__/
-*.py[cod]
-*$py.class
-.pytest_cache/
-.mypy_cache/
-.ruff_cache/
-.pytype/
 .venv/
-venv/
-env/
-*.egg-info/
-.eggs/
-pip-wheel-metadata/
+.*_cache/
 
 # Docker and local data
 docker-data/
-mysql-data/
-postgres-data/
+mongo-data/
+storage/uploads/
 *.sqlite3
 
 # Editors and OS

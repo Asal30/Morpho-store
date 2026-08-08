@@ -1,53 +1,45 @@
 # MORPHO Store
 
-MORPHO is a premium Sri Lankan T-shirt brand built around the idea **“Wear Your Memories.”** This repository contains the production-oriented foundation for its storefront and domain API; product and commerce features are intentionally deferred.
+MORPHO is a premium Sri Lankan T-shirt storefront built with Next.js and a Node.js domain API.
 
 ## Architecture
 
-The repository contains a Next.js frontend and a FastAPI backend. FastAPI owns all business/domain data and the MariaDB schema; Alembic owns migrations. Next.js may evolve BFF/server-side behavior, but it does not access the relational database directly. See [docs/architecture.md](docs/architecture.md).
+- `frontend/`: Next.js 16, React 19, TypeScript, App Router and Tailwind CSS
+- `backend/`: Node.js 22, JavaScript ES modules, Express, Mongoose and Zod
+- Database: MongoDB 8
+- Media: provider-independent metadata in MongoDB; local filesystem adapter for development
 
-## Technology stack
-
-- Web: Next.js 16, React 19, TypeScript, App Router, Tailwind CSS 4
-- Interaction readiness: Motion, GSAP, Three.js, React Three Fiber, Drei
-- Web foundations: React Hook Form, Zod, Zustand, Ky
-- API: FastAPI, Pydantic Settings, SQLAlchemy 2, Alembic, PyMySQL
-- Data: MariaDB 11 (MySQL-compatible)
-- Local orchestration: Docker Compose
-
-## Folder structure
-
-```text
-frontend/             Next.js customer-facing application
-  src/app/            routes and global styles
-  src/components/     reusable UI/layout/shared components
-  src/features/       feature-oriented frontend modules
-  src/services/       external API clients
-backend/              FastAPI domain application
-  app/api/            HTTP routes
-  app/core/           configuration and cross-cutting concerns
-  app/db/             SQLAlchemy infrastructure
-  app/models/         domain persistence models
-  app/schemas/        API contracts
-  app/services/       use cases/domain services
-  migrations/         Alembic migration environment
-  tests/              API tests
-infrastructure/       future infrastructure documentation/assets
-docs/                 architecture documentation
-```
+The frontend never connects to MongoDB. Express owns catalog rules, pricing, product management, media metadata and administrator sessions.
 
 ## Prerequisites
 
-- Node.js 22+ and npm 10+
-- Python 3.12+ (3.13 recommended)
-- MariaDB/MySQL for non-container local development
-- Docker Desktop with Compose for the full local stack
+- Node.js 22+
+- npm 10+
+- MongoDB 8, or Docker Desktop with Compose
 
-## Environment setup
+## Environment
 
-Copy `.env.example` to `.env` and replace the development passwords. Compose reads the root file. For a host-run API, set `DB_HOST=localhost`. Public frontend configuration must use the `NEXT_PUBLIC_` prefix.
+Copy `.env.example` to `.env`. Generate a bcrypt administrator password hash from `backend/`:
 
-## Frontend startup
+```bash
+npm install
+npm run hash-password -- "your-password"
+```
+
+Set the result as `ADMIN_PASSWORD_HASH` and generate a random `SESSION_SECRET` of at least 32 characters. Secrets must not use `NEXT_PUBLIC_*` variables.
+
+## Local startup
+
+Start MongoDB, then run:
+
+```bash
+cd backend
+npm install
+npm run seed
+npm run dev
+```
+
+In a second terminal:
 
 ```bash
 cd frontend
@@ -55,62 +47,28 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:3000.
+Open the storefront at http://localhost:3000, the admin login at http://localhost:3000/admin/login, and API health at http://localhost:8000/health.
 
-## Backend startup
+The seed command is idempotent and creates only garment, theme, color, size and pricing reference data. It does not create products.
 
-From `backend`:
-
-```bash
-uv sync --extra dev
-uv run uvicorn app.main:app --reload
-```
-
-Open http://localhost:8000/health or http://localhost:8000/docs.
-
-## Admin setup
-
-Generate an Argon2 password hash from `backend`, then place the result in
-`ADMIN_PASSWORD_HASH` in your root `.env` file. Keep the value quoted when your
-shell or environment-file parser requires it.
-
-```bash
-uv run python -m app.services.auth
-```
-
-Set `ADMIN_USERNAME` as well, restart the API, and open
-http://localhost:3000/admin/login. Admin sessions use an HttpOnly cookie and
-state-changing requests require the separate CSRF token issued at login.
-
-## Docker Compose startup
+## Docker Compose
 
 ```bash
 docker compose up --build
 ```
 
-This starts web (`:3000`), API (`:8000`), and MariaDB (`:3306`). Stop it with `docker compose down`; add `--volumes` only when you intentionally want to erase local database data.
-
-## Database and migration workflow
-
-FastAPI/SQLAlchemy owns models and Alembic owns schema history. From `backend`, with database environment variables set:
-
-```bash
-uv run alembic revision --autogenerate -m "describe change"
-uv run alembic upgrade head
-uv run alembic downgrade -1
-```
-
-Review generated migrations before applying them. Do not add database access to the Next.js application.
+This starts `frontend`, `backend`, and `mongodb`. Uploaded development media and MongoDB data use named volumes.
 
 ## Quality commands
 
 ```bash
-cd frontend
+cd backend
+npm run lint
+npm test
+npm run build
+
+cd ../frontend
 npm run lint
 npm run typecheck
 npm run build
-cd ../backend
-uv run ruff check .
-uv run pytest
-uv run python -c "from app.main import app; print(app.title)"
 ```

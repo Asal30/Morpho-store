@@ -29,7 +29,7 @@ export default async function AdminDashboardPage() {
       </dl>
       <section className="mt-12" aria-labelledby="recent-title">
         <h2 id="recent-title" className="font-display text-3xl font-medium">Recent products</h2>
-        {data.recentProducts.length ? <ul className="mt-5 divide-y divide-border border-y border-border">{data.recentProducts.map((product) => <li key={product.id}><Link href={`/admin/products/${product.id}/edit`} className="flex min-h-16 items-center justify-between gap-4 no-underline"><span>{product.name}</span><span className="text-xs text-muted">{product.garmentType}</span></Link></li>)}</ul> : <p className="mt-5 text-sm text-muted">No products have been created yet.</p>}
+        {/* {data.recentProducts.length ? <ul className="mt-5 divide-y divide-border border-y border-border">{data.recentProducts.map((product) => <li key={product.id}><Link href={`/admin/products/${product.id}/edit`} className="flex min-h-16 items-center justify-between gap-4 no-underline"><span>{product.name}</span><span className="text-xs text-muted">{product.garmentType}</span></Link></li>)}</ul> : <p className="mt-5 text-sm text-muted">No products have been created yet.</p>} */}
       </section>
     </div>
   );

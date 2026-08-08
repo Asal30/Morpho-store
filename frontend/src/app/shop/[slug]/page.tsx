@@ -16,10 +16,7 @@ interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }
 
-export async function generateStaticParams() {
-  // Products are managed at runtime by the API; valid slugs are rendered on demand.
-  return [];
-}
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;

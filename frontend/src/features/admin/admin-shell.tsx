@@ -15,12 +15,7 @@ const links = [
 export function AdminShell({ children }: Readonly<{ children: React.ReactNode }>) {
   const pathname = usePathname();
   const router = useRouter();
-
-  async function logout() {
-    await adminMutation("/auth/logout", { method: "POST" });
-    router.replace("/admin/login");
-    router.refresh();
-  }
+  async function logout() { await adminMutation("/auth/logout", { method: "POST" }); router.replace("/admin/login"); router.refresh(); }
 
   return (
     <div data-admin-root className="min-h-screen bg-background lg:grid lg:grid-cols-[16rem_1fr]">

@@ -1,33 +1,25 @@
 # MORPHO Store architecture
 
-## System boundary
-
-MORPHO Store is a monorepo with independently deployable web and API applications. The Next.js application owns presentation, browser interaction, and future server-side/BFF concerns. FastAPI is the primary business/domain API and is the **only application that owns and directly manipulates the relational business database schema**. Alembic is the sole migration mechanism.
+MORPHO is a monorepo with independently deployable frontend and backend applications.
 
 ```text
-Browser -> Next.js web/BFF -> FastAPI domain API -> MariaDB
+Browser -> Next.js frontend/BFF -> Express domain API -> MongoDB
 ```
 
-This boundary prevents competing data-access rules and makes domain behavior testable in one place. Next.js must call FastAPI for business data rather than connecting to MariaDB.
+## Ownership
 
-## Application organization
+The Next.js application owns presentation and browser interaction. It reads catalog data from the Express API and proxies authenticated administrator mutations. It never connects directly to MongoDB.
 
-The frontend uses the Next.js App Router. Cross-feature primitives live under `components`, domain-facing UI and behavior under `features`, external communication under `services`, and browser-only shared state under `stores`. React local/server state remains the default; Zustand is available for genuinely shared client state. React Hook Form and Zod provide form state and validation, and Ky is the small HTTP client boundary.
+The JavaScript Express application owns product rules, reference data, integer minor-unit pricing, media metadata, administrator authentication and all MongoDB writes. Mongoose defines persistence models and Zod validates HTTP input.
 
-The API separates HTTP routes (`api`), settings and cross-cutting policy (`core`), persistence (`db` and `models`), validated contracts (`schemas`), and use cases (`services`). Future domains—auth, users, catalog, products/variants, wishlist, cart, customization, orders, payments, shipping, reviews, and support—should be introduced as cohesive modules only when implemented.
+## Domain storage
 
-## Data and migrations
+Reference collections hold garment definitions, themes and pricing rules. Products retain stable UUID `productId` and variant IDs while MongoDB `_id` values remain persistence details. Images are ordered subdocuments containing delivery metadata; binary files are stored by a replaceable storage adapter, not in MongoDB.
 
-SQLAlchemy 2 is the persistence layer and MariaDB/MySQL is the relational store. Models are imported through `app.models` so Alembic can discover metadata. Schema changes are generated, reviewed, and applied from `backend`; application startup never creates tables implicitly.
+## Security
 
-## Configuration and security
+Administrator passwords are bcrypt hashes supplied through the environment. Successful login creates an opaque server-side session whose token is stored only as a keyed digest. The browser receives an HttpOnly, Strict SameSite cookie and a separate CSRF token for mutations. Production cookies are Secure.
 
-Runtime settings come from environment variables. `.env.example` contains development-safe examples only; `.env` is ignored. Public browser variables are limited to the `NEXT_PUBLIC_` namespace. Payment, storage, and email integrations will add provider-specific variables without changing the configuration boundary.
+## Operations
 
-## Motion and customization readiness
-
-Motion, GSAP, Three.js, React Three Fiber, and Drei are installed but intentionally unused until their product features exist. Heavy 3D/customization code should be dynamically loaded client-side to protect the core storefront bundle.
-
-## Deployment direction
-
-Docker Compose provides local web, API, and database services with health-based dependency ordering. Images preserve independent application boundaries. Kubernetes is a future production concern and is intentionally absent.
+The idempotent JavaScript seed script upserts reference data and authoritative pricing without creating products. Docker Compose runs `frontend`, `backend`, and `mongodb`, with named volumes for database and development media persistence.
