@@ -106,6 +106,27 @@ const customizationRequestModel = mongoose.Schema(
                 enum : ["front", "back"]
             }
         },
+        designObjects : [
+            {
+                id : { type : String, required : true, trim : true },
+                type : { type : String, required : true, enum : ["artwork", "text"] },
+                placement : { type : String, required : true, enum : ["front", "back"] },
+                x : { type : Number, required : true, min : -1, max : 2 },
+                y : { type : Number, required : true, min : -1, max : 2 },
+                width : { type : Number, required : true, min : 0.0001, max : 5 },
+                height : { type : Number, required : true, min : 0.0001, max : 5 },
+                scaleX : { type : Number, required : true, min : 0.01, max : 20 },
+                scaleY : { type : Number, required : true, min : 0.01, max : 20 },
+                rotation : { type : Number, required : true, min : -3600, max : 3600 },
+                zIndex : { type : Number, required : true, min : 0, max : 100 },
+                assetKey : { type : String, enum : ["frontArtwork", "backArtwork"] },
+                text : { type : String, maxlength : 80, trim : true },
+                fontFamily : { type : String, enum : ["Manrope", "Cormorant Garamond", "Arial"] },
+                fontSize : { type : Number, min : 8, max : 96 },
+                fill : { type : String, maxlength : 20, trim : true },
+                textAlign : { type : String, enum : ["left", "center", "right"] }
+            }
+        ],
         description : {
             type : String,
             required : true,

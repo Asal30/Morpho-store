@@ -47,7 +47,8 @@ export async function createOrder(req, res) {
                             width : artwork.width,
                             height : artwork.height
                         })),
-                        customText : customization.customText
+                        customText : customization.customText,
+                        designObjects : customization.designObjects
                     }
                 })
                 continue

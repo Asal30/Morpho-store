@@ -53,6 +53,7 @@ export function CartView() {
               <h2 className="mt-1 font-display text-2xl text-primary">{entry.customization.color}</h2>
               <p className="mt-1 text-sm text-muted">Size {entry.customization.size} · Qty {entry.customization.quantity} · {entry.customization.artwork.map((art) => art.placement).join(" + ") || entry.customization.customText?.placement}</p>
               {entry.customization.customText?.text ? <p className="mt-2 text-sm">“{entry.customization.customText.text}”</p> : null}
+              <Link href={`/customize?edit=${entry.customization._id}`} className="mt-3 inline-block text-xs font-semibold">Edit customization</Link>
             </div>
             <div className="sm:text-right">
               <p className="font-semibold">{formatProductPrice({ currency: "LKR", minorAmount: entry.customization.totalPrice })}</p>

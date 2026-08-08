@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,8 +12,8 @@ import { useRegion } from "@/features/region/region-provider";
 import { apiRequest, getAuthToken } from "@/lib/api-client";
 
 import { customizationConfig, customizerFonts, type CustomizationCategory, type CustomizationSide } from "./customization-config";
-import type { CustomizationQuote, CustomTextState } from "./customizer.types";
-import { TshirtPreview } from "./tshirt-preview";
+import type { CustomizationQuote, CustomTextState, DesignObject } from "./customizer.types";
+import { DesignEditor } from "./design-editor";
 
 const initialText: CustomTextState = {
   text: "",
@@ -31,6 +31,55 @@ interface SavedDraft {
   quantity?: number;
   customText?: CustomTextState;
   description?: string;
+  designObjects?: DesignObject[];
+}
+
+interface SavedCustomization {
+  _id: string;
+  category: CustomizationCategory;
+  color: string;
+  size: string;
+  quantity: number;
+  description: string;
+  customText?: CustomTextState;
+  artwork: Array<{ secureUrl: string; placement: CustomizationSide }>;
+  designObjects?: DesignObject[];
+}
+
+function legacyDesign(saved: SavedCustomization): DesignObject[] {
+  const artwork = saved.artwork.map((item, zIndex) => ({
+    id: `legacy-artwork-${item.placement}`,
+    type: "artwork" as const,
+    placement: item.placement,
+    assetKey: item.placement === "front" ? "frontArtwork" as const : "backArtwork" as const,
+    x: 0.5,
+    y: 0.5,
+    width: 0.6,
+    height: 0.6,
+    scaleX: 1,
+    scaleY: 1,
+    rotation: 0,
+    zIndex,
+  }));
+  if (!saved.customText?.text) return artwork;
+  return [...artwork, {
+    id: "legacy-text",
+    type: "text" as const,
+    placement: saved.customText.placement,
+    x: 0.5,
+    y: 0.72,
+    width: 0.4,
+    height: 0.08,
+    scaleX: 1,
+    scaleY: 1,
+    rotation: 0,
+    zIndex: artwork.length,
+    text: saved.customText.text,
+    fontFamily: saved.customText.font,
+    fontSize: saved.customText.fontSize,
+    fill: saved.customText.color,
+    textAlign: saved.customText.alignment,
+  }];
 }
 
 function readDraft(): SavedDraft {
@@ -56,7 +105,11 @@ export function Customizer() {
   const [quantity, setQuantity] = useState(1);
   const [activeSide, setActiveSide] = useState<CustomizationSide>("front");
   const [artwork, setArtwork] = useState<Record<CustomizationSide, File | null>>({ front: null, back: null });
+  const [existingArtworkUrls, setExistingArtworkUrls] = useState<Partial<Record<CustomizationSide, string>>>({});
   const [customText, setCustomText] = useState<CustomTextState>(initialText);
+  const [designObjects, setDesignObjects] = useState<DesignObject[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editorVersion, setEditorVersion] = useState(0);
   const [description, setDescription] = useState("Customer-created MORPHO T-shirt design");
   const [quote, setQuote] = useState<CustomizationQuote | null>(null);
   const [error, setError] = useState("");
@@ -74,15 +127,35 @@ export function Customizer() {
       if (draft.quantity) setQuantity(draft.quantity);
       if (draft.customText) setCustomText(draft.customText);
       if (draft.description) setDescription(draft.description);
+      if (draft.designObjects) setDesignObjects(draft.designObjects);
     });
+  }, []);
+
+  useEffect(() => {
+    const editId = new URLSearchParams(window.location.search).get("edit");
+    if (!editId || !getAuthToken()) return;
+    apiRequest<SavedCustomization>(`/api/customizations/${editId}`)
+      .then((saved) => {
+        setEditingId(saved._id);
+        setCategory(saved.category);
+        setColorName(saved.color);
+        setSize(saved.size);
+        setQuantity(saved.quantity);
+        setDescription(saved.description);
+        if (saved.customText?.text) setCustomText(saved.customText);
+        setExistingArtworkUrls(Object.fromEntries(saved.artwork.map((item) => [item.placement, item.secureUrl])));
+        setDesignObjects(saved.designObjects?.length ? saved.designObjects : legacyDesign(saved));
+        setEditorVersion((value) => value + 1);
+      })
+      .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Unable to reopen this customization"));
   }, []);
 
   const artworkUrls = useMemo(
     () => ({
-      front: artwork.front ? URL.createObjectURL(artwork.front) : undefined,
-      back: artwork.back ? URL.createObjectURL(artwork.back) : undefined,
+      front: artwork.front ? URL.createObjectURL(artwork.front) : existingArtworkUrls.front,
+      back: artwork.back ? URL.createObjectURL(artwork.back) : existingArtworkUrls.back,
     }),
-    [artwork],
+    [artwork, existingArtworkUrls],
   );
 
   useEffect(() => () => {
@@ -92,9 +165,7 @@ export function Customizer() {
 
   useEffect(() => {
     const placements = [
-      ...(artwork.front ? ["front"] : []),
-      ...(artwork.back ? ["back"] : []),
-      ...(customText.text.trim() ? [customText.placement] : []),
+      ...designObjects.map((object) => object.placement),
     ];
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
@@ -117,7 +188,7 @@ export function Customizer() {
       window.clearTimeout(timer);
       controller.abort();
     };
-  }, [artwork.back, artwork.front, category, color.name, customText.placement, customText.text, quantity, size]);
+  }, [category, color.name, designObjects, quantity, size]);
 
   function changeCategory(nextCategory: CustomizationCategory) {
     const next = customizationConfig[nextCategory];
@@ -137,15 +208,20 @@ export function Customizer() {
     setArtwork((current) => ({ ...current, [activeSide]: file }));
   }
 
+  const removeArtwork = useCallback((placement: CustomizationSide) => {
+    setArtwork((current) => ({ ...current, [placement]: null }));
+    setExistingArtworkUrls((current) => ({ ...current, [placement]: undefined }));
+  }, []);
+
   async function submit() {
     setError("");
     setSuccess("");
-    if (!artwork.front && !artwork.back && !customText.text.trim()) {
+    if (!designObjects.length) {
       setError("Add artwork or custom text before saving your design.");
       return;
     }
     if (!getAuthToken()) {
-      window.sessionStorage.setItem("morpho_customizer_draft", JSON.stringify({ category, colorName, size, quantity, customText, description }));
+      window.sessionStorage.setItem("morpho_customizer_draft", JSON.stringify({ category, colorName, size, quantity, customText, description, designObjects }));
       setError("Sign in before adding this design to your cart. Your selections are saved in this browser; reselect artwork after signing in.");
       return;
     }
@@ -158,12 +234,14 @@ export function Customizer() {
       form.set("size", size);
       form.set("quantity", String(quantity));
       form.set("description", description);
+      form.set("designObjects", JSON.stringify(designObjects));
       if (customText.text.trim()) form.set("customText", JSON.stringify(customText));
       if (artwork.front) form.set("frontArtwork", artwork.front);
       if (artwork.back) form.set("backArtwork", artwork.back);
-      await apiRequest("/api/customizations", { method: "POST", body: form });
+      form.set("removedArtworkPlacements", JSON.stringify((["front", "back"] as const).filter((placement) => !artworkUrls[placement])));
+      await apiRequest(editingId ? `/api/customizations/${editingId}` : "/api/customizations", { method: editingId ? "PATCH" : "POST", body: form });
       window.sessionStorage.removeItem("morpho_customizer_draft");
-      setSuccess("Your custom design was saved and added to your cart.");
+      setSuccess(editingId ? "Your custom design changes were saved." : "Your custom design was saved and added to your cart.");
     } catch (reason) {
       setError(reason instanceof Error ? reason.message : "The customization could not be saved");
     } finally {
@@ -174,8 +252,8 @@ export function Customizer() {
   return (
     <div className="grid gap-10 lg:grid-cols-[minmax(20rem,0.78fr)_minmax(0,1.22fr)] lg:items-start">
       <div className="lg:sticky lg:top-28">
-        <TshirtPreview color={color} side={activeSide} artworkUrl={artworkUrls[activeSide]} customText={customText} />
-        <p className="mt-3 text-xs leading-5 text-muted">Preview placement is proportional to the replaceable garment mockup. Final print positioning is reviewed by MORPHO production.</p>
+        <DesignEditor key={editorVersion} color={color} side={activeSide} artworkUrls={artworkUrls} customText={customText} initialDesign={designObjects} onTextChange={setCustomText} onDesignChange={setDesignObjects} onRemoveArtwork={removeArtwork} />
+        <p className="mt-3 text-xs leading-5 text-muted">Drag, scale, and rotate selected artwork or text inside the configured print area. Use two fingers to pinch and rotate on touch screens.</p>
       </div>
       
       <div className="space-y-9 lg:order-1">
@@ -212,7 +290,7 @@ export function Customizer() {
         <div>
           <label htmlFor="artwork" className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">4. {activeSide} artwork</label>
           <Input id="artwork" type="file" accept="image/png,image/jpeg,image/webp" className="mt-3 pt-2.5" onChange={(event) => chooseArtwork(event.target.files?.[0])} />
-          {artwork[activeSide] ? <div className="mt-2 flex items-center justify-between gap-4 text-xs text-muted"><span className="truncate">{artwork[activeSide]?.name}</span><button type="button" className="font-semibold text-destructive" onClick={() => setArtwork((current) => ({ ...current, [activeSide]: null }))}>Remove</button></div> : null}
+          {artworkUrls[activeSide] ? <div className="mt-2 flex items-center justify-between gap-4 text-xs text-muted"><span className="truncate">{artwork[activeSide]?.name ?? `Saved ${activeSide} artwork`}</span><button type="button" className="font-semibold text-destructive" onClick={() => removeArtwork(activeSide)}>Remove</button></div> : null}
         </div>
 
         <div className="space-y-3">
@@ -239,7 +317,7 @@ export function Customizer() {
 
         {error ? <p role="alert" className="text-sm text-destructive">{error} {error.startsWith("Sign in") ? <Link href="/account?redirect=/customize" className="font-semibold">Sign in</Link> : null}</p> : null}
         {success ? <p role="status" className="text-sm text-success">{success} <Link href="/cart" className="font-semibold">View cart</Link></p> : null}
-        <Button size="lg" className="w-full" disabled={saving || !quote} onClick={submit}>{saving ? "Uploading & saving…" : "Add custom design to cart"}</Button>
+        <Button size="lg" className="w-full" disabled={saving || !quote} onClick={submit}>{saving ? "Uploading & saving…" : editingId ? "Save customization" : "Add custom design to cart"}</Button>
       </div>
     </div>
   );

@@ -13,7 +13,7 @@ customizationRequestRouter.get("/my", getMyCustomizationRequests)
 customizationRequestRouter.get("/", requireAdmin, getCustomizationRequests)
 customizationRequestRouter.patch("/:id/status", requireAdmin, updateCustomizationStatus)
 customizationRequestRouter.patch("/:id/admin", requireAdmin, updateCustomizationRequest)
-customizationRequestRouter.patch("/:id", updateMyCustomizationRequest)
+customizationRequestRouter.patch("/:id", handleArtworkUpload, updateMyCustomizationRequest)
 customizationRequestRouter.delete("/:id", cancelMyCustomizationRequest)
 customizationRequestRouter.get("/:id", getCustomizationRequest)
 

@@ -96,7 +96,28 @@ const orderModel = mongoose.Schema(
                         color : String,
                         alignment : String,
                         placement : String
-                    }
+                    },
+                    designObjects : [
+                        {
+                            id : String,
+                            type : { type : String, enum : ["artwork", "text"] },
+                            placement : { type : String, enum : ["front", "back"] },
+                            x : Number,
+                            y : Number,
+                            width : Number,
+                            height : Number,
+                            scaleX : Number,
+                            scaleY : Number,
+                            rotation : Number,
+                            zIndex : Number,
+                            assetKey : String,
+                            text : String,
+                            fontFamily : String,
+                            fontSize : Number,
+                            fill : String,
+                            textAlign : String
+                        }
+                    ]
                 }
             }
         ],

@@ -102,6 +102,13 @@ test("customization API enforces upload, ownership, pricing, cart, and order bou
         alignment : "center",
         placement : "front"
     }))
+    form.set("designObjects", JSON.stringify([{
+        id : "text-front-1", type : "text", placement : "front",
+        x : 0.31, y : 0.42, width : 0.4, height : 0.08,
+        scaleX : 1.4, scaleY : 1.4, rotation : -20, zIndex : 0,
+        text : "MORPHO", fontFamily : "Manrope", fontSize : 32,
+        fill : "#111111", textAlign : "center"
+    }]))
     const created = await read(await fetch(`${baseUrl}/api/customizations`, {
         method : "POST",
         headers : authorization,
@@ -110,6 +117,8 @@ test("customization API enforces upload, ownership, pricing, cart, and order bou
     assert.equal(created.status, 201)
     assert.equal(created.body.data.customization.unitPrice, 300000)
     assert.equal(created.body.data.customization.totalPrice, 600000)
+    assert.equal(created.body.data.customization.designObjects[0].rotation, -20)
+    assert.equal(created.body.data.customization.designObjects[0].scaleX, 1.4)
     assert.equal(cart.items.length, 1)
     assert.equal(cart.items[0].type, "custom")
 
@@ -139,6 +148,17 @@ test("customization API enforces upload, ownership, pricing, cart, and order bou
     delete process.env.CLOUDINARY_API_KEY
     delete process.env.CLOUDINARY_API_SECRET
     const validArtworkForm = new FormData()
+    validArtworkForm.set("category", "Oversize")
+    validArtworkForm.set("color", "Black")
+    validArtworkForm.set("size", "M")
+    validArtworkForm.set("quantity", "1")
+    validArtworkForm.set("description", "Artwork design")
+    validArtworkForm.set("designObjects", JSON.stringify([{
+        id : "artwork-front-1", type : "artwork", placement : "front",
+        x : 0.5, y : 0.5, width : 0.5, height : 0.5,
+        scaleX : 1, scaleY : 1, rotation : 0, zIndex : 0,
+        assetKey : "frontArtwork"
+    }]))
     validArtworkForm.set("frontArtwork", new Blob([new Uint8Array([137, 80, 78, 71])], { type : "image/png" }), "transparent.png")
     const unavailableUpload = await read(await fetch(`${baseUrl}/api/customizations`, {
         method : "POST",
@@ -170,6 +190,8 @@ test("customization API enforces upload, ownership, pricing, cart, and order bou
     assert.equal(orderPayload.items[0].unitPrice, 300000)
     assert.equal(orderPayload.items[0].totalPrice, 600000)
     assert.equal(orderPayload.items[0].customizationSnapshot.customText.text, "MORPHO")
+    assert.equal(orderPayload.items[0].customizationSnapshot.designObjects[0].rotation, -20)
+    assert.equal(orderPayload.items[0].customizationSnapshot.designObjects[0].scaleX, 1.4)
 
     Item.findById = async () => ({
         _id : "507f1f77bcf86cd799439014",

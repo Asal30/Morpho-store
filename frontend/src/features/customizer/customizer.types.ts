@@ -26,3 +26,35 @@ export interface CustomizerSelection {
   activeSide: CustomizationSide;
   customText: CustomTextState;
 }
+
+export interface DesignTransform {
+  /** Center position and source dimensions normalized to the logical print area. */
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  scaleX: number;
+  scaleY: number;
+  rotation: number;
+  zIndex: number;
+}
+
+export interface ArtworkDesignObject extends DesignTransform {
+  id: string;
+  type: "artwork";
+  placement: CustomizationSide;
+  assetKey: "frontArtwork" | "backArtwork";
+}
+
+export interface TextDesignObject extends DesignTransform {
+  id: string;
+  type: "text";
+  placement: CustomizationSide;
+  text: string;
+  fontFamily: string;
+  fontSize: number;
+  fill: string;
+  textAlign: "left" | "center" | "right";
+}
+
+export type DesignObject = ArtworkDesignObject | TextDesignObject;

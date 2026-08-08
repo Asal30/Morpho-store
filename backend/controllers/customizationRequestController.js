@@ -17,6 +17,64 @@ function parseCustomText(value) {
     }
 }
 
+function parseJson(value, message) {
+    if (value === undefined) return undefined
+    if (typeof value === "object") return value
+    try {
+        return JSON.parse(value)
+    } catch {
+        throw new Error(message)
+    }
+}
+
+function parseDesignObjects(value) {
+    const objects = parseJson(value, "Invalid design configuration")
+    if (objects === undefined) return undefined
+    if (!Array.isArray(objects) || objects.length > 20) throw new Error("Invalid design configuration")
+    return objects.map((object, zIndex) => {
+        if (!["artwork", "text"].includes(object.type) || !["front", "back"].includes(object.placement)) {
+            throw new Error("Invalid design configuration")
+        }
+        const numericFields = ["x", "y", "width", "height", "scaleX", "scaleY", "rotation"]
+        if (numericFields.some((field) => !Number.isFinite(Number(object[field])))) {
+            throw new Error("Invalid design configuration")
+        }
+        const base = {
+            id : String(object.id ?? "").slice(0, 100),
+            type : object.type,
+            placement : object.placement,
+            x : Number(object.x),
+            y : Number(object.y),
+            width : Number(object.width),
+            height : Number(object.height),
+            scaleX : Number(object.scaleX),
+            scaleY : Number(object.scaleY),
+            rotation : Number(object.rotation),
+            zIndex
+        }
+        if (!base.id || base.x < -1 || base.x > 2 || base.y < -1 || base.y > 2 ||
+            base.width <= 0 || base.width > 3 || base.height <= 0 || base.height > 3 ||
+            base.scaleX <= 0 || base.scaleX > 20 || base.scaleY <= 0 || base.scaleY > 20 ||
+            base.rotation < -3600 || base.rotation > 3600) {
+            throw new Error("Invalid design configuration")
+        }
+        if (object.type === "text" && (!object.text?.trim() || !["left", "center", "right"].includes(object.textAlign) ||
+            !Number.isFinite(Number(object.fontSize)) || Number(object.fontSize) < 8 || Number(object.fontSize) > 96)) {
+            throw new Error("Invalid design configuration")
+        }
+        return object.type === "artwork"
+            ? { ...base, assetKey : object.placement === "front" ? "frontArtwork" : "backArtwork" }
+            : {
+                ...base,
+                text : String(object.text ?? "").slice(0, 80),
+                fontFamily : object.fontFamily,
+                fontSize : Number(object.fontSize),
+                fill : String(object.fill ?? "").slice(0, 20),
+                textAlign : object.textAlign
+            }
+    })
+}
+
 function artworkFiles(req) {
     return [
         ...(req.files?.frontArtwork ?? []).map((file) => ({ file, placement : "front" })),
@@ -44,11 +102,8 @@ async function uploadArtwork(files, userId) {
     }))
 }
 
-function getPlacements(artwork, customText) {
-    return [
-        ...artwork.map((entry) => entry.placement),
-        ...(customText?.text ? [customText.placement] : [])
-    ].filter(Boolean)
+function getPlacements(designObjects) {
+    return designObjects.map((object) => object.placement)
 }
 
 export async function quoteCustomization(req, res) {
@@ -72,8 +127,9 @@ export async function quoteCustomization(req, res) {
 export async function createCustomizationRequest(req, res) {
     try {
         const customText = parseCustomText(req.body.customText)
+        const designObjects = parseDesignObjects(req.body.designObjects)
         const files = artworkFiles(req)
-        if (files.length === 0 && !customText?.text?.trim()) {
+        if (!designObjects?.length || (files.length === 0 && !customText?.text?.trim())) {
             return sendError(res, 400, "Add artwork or custom text before saving")
         }
 
@@ -83,7 +139,7 @@ export async function createCustomizationRequest(req, res) {
             color : req.body.color,
             size : req.body.size,
             quantity : req.body.quantity,
-            placements : getPlacements(artwork, customText)
+            placements : getPlacements(designObjects)
         })
         const request = await CustomizationRequest.create({
             ...pick(req.body, customerFields),
@@ -92,6 +148,7 @@ export async function createCustomizationRequest(req, res) {
             quantity : quote.quantity,
             artwork,
             customText,
+            designObjects,
             price : quote.totalPrice,
             unitPrice : quote.unitPrice,
             totalPrice : quote.totalPrice,
@@ -113,7 +170,7 @@ export async function createCustomizationRequest(req, res) {
         if (error.message === "Cloudinary is not configured") {
             return sendError(res, 503, "Artwork upload is not configured")
         }
-        if (error.message === "Invalid custom text configuration" || error.message?.startsWith("Unsupported") || error.message?.startsWith("Quantity")) {
+        if (["Invalid custom text configuration", "Invalid design configuration"].includes(error.message) || error.message?.startsWith("Unsupported") || error.message?.startsWith("Quantity")) {
             return sendError(res, 400, error.message)
         }
         return handleControllerError(error, res)
@@ -150,14 +207,25 @@ export async function updateMyCustomizationRequest(req, res) {
         if (!editableStatuses.includes(current.status)) return sendError(res, 409, "Customization request can no longer be edited")
 
         const customText = parseCustomText(req.body.customText) ?? current.customText
+        const designObjects = parseDesignObjects(req.body.designObjects) ?? current.designObjects
+        const removedPlacements = parseJson(req.body.removedArtworkPlacements, "Invalid artwork removal configuration") ?? []
+        if (!Array.isArray(removedPlacements) || removedPlacements.some((placement) => !["front", "back"].includes(placement))) {
+            return sendError(res, 400, "Invalid artwork removal configuration")
+        }
+        const uploadedArtwork = await uploadArtwork(artworkFiles(req), req.user._id.toString())
+        const replacedPlacements = new Set(uploadedArtwork.map((item) => item.placement))
+        const artwork = [
+            ...current.artwork.filter((item) => !removedPlacements.includes(item.placement) && !replacedPlacements.has(item.placement)),
+            ...uploadedArtwork
+        ]
         const quantity = req.body.quantity ?? current.quantity
-        const nextFields = { ...pick(req.body, customerFields), customText, quantity }
+        const nextFields = { ...pick(req.body, customerFields), customText, designObjects, artwork, quantity }
         const quote = await calculateCustomizationPrice({
             category : nextFields.category ?? current.category,
             color : nextFields.color ?? current.color,
             size : nextFields.size ?? current.size,
             quantity,
-            placements : getPlacements(current.artwork, customText)
+            placements : getPlacements(designObjects)
         })
         Object.assign(current, nextFields, {
             price : quote.totalPrice,
@@ -171,7 +239,10 @@ export async function updateMyCustomizationRequest(req, res) {
         )
         return sendData(res, current)
     } catch (error) {
-        if (error.message === "Invalid custom text configuration" || error.message?.startsWith("Unsupported") || error.message?.startsWith("Quantity")) {
+        if (error.message === "Cloudinary is not configured") {
+            return sendError(res, 503, "Artwork upload is not configured")
+        }
+        if (["Invalid custom text configuration", "Invalid design configuration", "Invalid artwork removal configuration"].includes(error.message) || error.message?.startsWith("Unsupported") || error.message?.startsWith("Quantity")) {
             return sendError(res, 400, error.message)
         }
         return handleControllerError(error, res)
