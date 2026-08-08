@@ -6,7 +6,7 @@ import { Canvas, FabricImage, FabricObject, IText } from "fabric";
 
 import { Button } from "@/components/ui/button";
 
-import type { CustomizationColor, CustomizationSide, PrintArea } from "./customization-config";
+import { getDefaultMorphoLogo, type CustomizationColor, type CustomizationSide, type DefaultLogoConfiguration, type PrintArea } from "./customization-config";
 import type { CustomTextState, DesignObject } from "./customizer.types";
 
 const LOGICAL_WIDTH = 1000;
@@ -94,6 +94,9 @@ function sameSnapshot(left: DesignObject[], right: DesignObject[]): boolean {
 function fitCanvasDisplay(canvas: Canvas) {
   canvas.wrapperEl.style.width = "100%";
   canvas.wrapperEl.style.height = "100%";
+  canvas.wrapperEl.style.position = "absolute";
+  canvas.wrapperEl.style.inset = "0";
+  canvas.wrapperEl.style.zIndex = "2";
   canvas.lowerCanvasEl.style.width = "100%";
   canvas.lowerCanvasEl.style.height = "100%";
   canvas.upperCanvasEl.style.width = "100%";
@@ -103,6 +106,7 @@ function fitCanvasDisplay(canvas: Canvas) {
 export function DesignEditor({
   color,
   side,
+  defaultLogo,
   artworkUrls,
   customText,
   initialDesign,
@@ -112,6 +116,7 @@ export function DesignEditor({
 }: Readonly<{
   color: CustomizationColor;
   side: CustomizationSide;
+  defaultLogo: DefaultLogoConfiguration;
   artworkUrls: Partial<Record<CustomizationSide, string>>;
   customText: CustomTextState;
   initialDesign: readonly DesignObject[];
@@ -143,6 +148,8 @@ export function DesignEditor({
   const [selection, setSelection] = useState<{ type: string; rotation: number; scale: number } | null>(null);
   const [historyControls, setHistoryControls] = useState({ canUndo: false, canRedo: false });
   const area = side === "front" ? color.frontArea : color.backArea;
+  const logo = getDefaultMorphoLogo(color.name);
+  const showDefaultLogo = defaultLogo.side === side && !initialDesign.some((object) => object.placement === side);
 
   useEffect(() => {
     artworkUrlsRef.current = artworkUrls;
@@ -479,6 +486,7 @@ export function DesignEditor({
       <div className="relative aspect-4/5 w-full overflow-hidden bg-surface-muted" aria-label={`${side} interactive customization editor`}>
         <Image src={color.mockup} alt={`${color.name} T-shirt mockup, ${side} print view`} fill priority sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
         <div className="absolute overflow-hidden ring-1 ring-accent/45 ring-offset-1 ring-offset-transparent" style={{ left: `${area.x}%`, top: `${area.y}%`, width: `${area.width}%`, height: `${area.height}%` }}>
+          {showDefaultLogo ? <Image src={logo.src} alt={`Default MORPHO ${logo.variant} logo`} width={600} height={200} className="pointer-events-none absolute z-1 h-auto select-none object-contain" draggable={false} style={{ left: `${defaultLogo.x * 100}%`, top: `${defaultLogo.y * 100}%`, width: `${defaultLogo.width * 100}%`, transform: "translate(-50%, -50%)" }} /> : null}
           <canvas ref={elementRef} />
         </div>
         <span className="absolute top-4 left-4 bg-primary/85 px-3 py-1 text-[0.625rem] font-semibold tracking-[0.16em] text-surface uppercase">{side} editor</span>

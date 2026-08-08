@@ -127,6 +127,11 @@ const customizationRequestModel = mongoose.Schema(
                 textAlign : { type : String, enum : ["left", "center", "right"] }
             }
         ],
+        defaultBranding : {
+            applied : { type : Boolean, default : true },
+            side : { type : String, enum : ["front", "back"] },
+            variant : { type : String, enum : ["black", "white"] }
+        },
         description : {
             type : String,
             required : true,

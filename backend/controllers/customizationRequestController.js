@@ -1,6 +1,7 @@
 import Cart from "../models/cartModel.js";
 import CustomizationRequest from "../models/customizationRequestModel.js";
 import { configureCloudinary, uploadArtworkBuffer } from "../config/cloudinary.js";
+import { getDefaultBranding } from "../config/customization.js";
 import { calculateCustomizationPrice } from "../utilities/customizationPricing.js";
 import { handleControllerError, isValidObjectId, pick, sendData, sendError } from "../utilities/http.js";
 
@@ -82,6 +83,20 @@ function artworkFiles(req) {
     ]
 }
 
+function validateCustomerContent(designObjects, artworkPlacements, customText) {
+    const configuredArtworkSides = new Set(designObjects.filter((object) => object.type === "artwork").map((object) => object.placement))
+    const availableArtworkSides = new Set(artworkPlacements)
+    if ([...configuredArtworkSides].some((side) => !availableArtworkSides.has(side)) ||
+        [...availableArtworkSides].some((side) => !configuredArtworkSides.has(side))) {
+        throw new Error("Artwork and design configuration do not match")
+    }
+    const textSides = new Set(designObjects.filter((object) => object.type === "text").map((object) => object.placement))
+    const hasCustomText = Boolean(customText?.text?.trim())
+    if (hasCustomText !== (textSides.size > 0) || (hasCustomText && !textSides.has(customText.placement))) {
+        throw new Error("Custom text and design configuration do not match")
+    }
+}
+
 async function uploadArtwork(files, userId) {
     if (files.length === 0) return []
     if (!configureCloudinary()) throw new Error("Cloudinary is not configured")
@@ -102,18 +117,15 @@ async function uploadArtwork(files, userId) {
     }))
 }
 
-function getPlacements(designObjects) {
-    return designObjects.map((object) => object.placement)
-}
-
 export async function quoteCustomization(req, res) {
     try {
+        const designObjects = parseDesignObjects(req.body.designObjects ?? [])
         const quote = await calculateCustomizationPrice({
             category : req.body.category,
             color : req.body.color,
             size : req.body.size,
             quantity : req.body.quantity,
-            placements : Array.isArray(req.body.placements) ? req.body.placements : []
+            designObjects
         })
         return sendData(res, quote)
     } catch (error) {
@@ -127,11 +139,9 @@ export async function quoteCustomization(req, res) {
 export async function createCustomizationRequest(req, res) {
     try {
         const customText = parseCustomText(req.body.customText)
-        const designObjects = parseDesignObjects(req.body.designObjects)
+        const designObjects = parseDesignObjects(req.body.designObjects) ?? []
         const files = artworkFiles(req)
-        if (!designObjects?.length || (files.length === 0 && !customText?.text?.trim())) {
-            return sendError(res, 400, "Add artwork or custom text before saving")
-        }
+        validateCustomerContent(designObjects, files.map((entry) => entry.placement), customText)
 
         const artwork = await uploadArtwork(files, req.user._id.toString())
         const quote = await calculateCustomizationPrice({
@@ -139,7 +149,7 @@ export async function createCustomizationRequest(req, res) {
             color : req.body.color,
             size : req.body.size,
             quantity : req.body.quantity,
-            placements : getPlacements(designObjects)
+            designObjects
         })
         const request = await CustomizationRequest.create({
             ...pick(req.body, customerFields),
@@ -149,6 +159,7 @@ export async function createCustomizationRequest(req, res) {
             artwork,
             customText,
             designObjects,
+            defaultBranding : getDefaultBranding(req.body.category, req.body.color, designObjects),
             price : quote.totalPrice,
             unitPrice : quote.unitPrice,
             totalPrice : quote.totalPrice,
@@ -170,7 +181,7 @@ export async function createCustomizationRequest(req, res) {
         if (error.message === "Cloudinary is not configured") {
             return sendError(res, 503, "Artwork upload is not configured")
         }
-        if (["Invalid custom text configuration", "Invalid design configuration"].includes(error.message) || error.message?.startsWith("Unsupported") || error.message?.startsWith("Quantity")) {
+        if (["Invalid custom text configuration", "Invalid design configuration", "Artwork and design configuration do not match", "Custom text and design configuration do not match"].includes(error.message) || error.message?.startsWith("Unsupported") || error.message?.startsWith("Quantity")) {
             return sendError(res, 400, error.message)
         }
         return handleControllerError(error, res)
@@ -212,7 +223,13 @@ export async function updateMyCustomizationRequest(req, res) {
         if (!Array.isArray(removedPlacements) || removedPlacements.some((placement) => !["front", "back"].includes(placement))) {
             return sendError(res, 400, "Invalid artwork removal configuration")
         }
-        const uploadedArtwork = await uploadArtwork(artworkFiles(req), req.user._id.toString())
+        const files = artworkFiles(req)
+        const replacedFilePlacements = new Set(files.map((entry) => entry.placement))
+        const retainedArtworkPlacements = current.artwork
+            .filter((item) => !removedPlacements.includes(item.placement) && !replacedFilePlacements.has(item.placement))
+            .map((item) => item.placement)
+        validateCustomerContent(designObjects, [...retainedArtworkPlacements, ...replacedFilePlacements], customText)
+        const uploadedArtwork = await uploadArtwork(files, req.user._id.toString())
         const replacedPlacements = new Set(uploadedArtwork.map((item) => item.placement))
         const artwork = [
             ...current.artwork.filter((item) => !removedPlacements.includes(item.placement) && !replacedPlacements.has(item.placement)),
@@ -225,9 +242,10 @@ export async function updateMyCustomizationRequest(req, res) {
             color : nextFields.color ?? current.color,
             size : nextFields.size ?? current.size,
             quantity,
-            placements : getPlacements(designObjects)
+            designObjects
         })
         Object.assign(current, nextFields, {
+            defaultBranding : getDefaultBranding(nextFields.category ?? current.category, nextFields.color ?? current.color, designObjects),
             price : quote.totalPrice,
             unitPrice : quote.unitPrice,
             totalPrice : quote.totalPrice
@@ -242,7 +260,7 @@ export async function updateMyCustomizationRequest(req, res) {
         if (error.message === "Cloudinary is not configured") {
             return sendError(res, 503, "Artwork upload is not configured")
         }
-        if (["Invalid custom text configuration", "Invalid design configuration", "Invalid artwork removal configuration"].includes(error.message) || error.message?.startsWith("Unsupported") || error.message?.startsWith("Quantity")) {
+        if (["Invalid custom text configuration", "Invalid design configuration", "Invalid artwork removal configuration", "Artwork and design configuration do not match", "Custom text and design configuration do not match"].includes(error.message) || error.message?.startsWith("Unsupported") || error.message?.startsWith("Quantity")) {
             return sendError(res, 400, error.message)
         }
         return handleControllerError(error, res)

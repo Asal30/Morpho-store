@@ -164,15 +164,12 @@ export function Customizer() {
   }, [artworkUrls]);
 
   useEffect(() => {
-    const placements = [
-      ...designObjects.map((object) => object.placement),
-    ];
     const controller = new AbortController();
     const timer = window.setTimeout(() => {
       apiRequest<CustomizationQuote>("/api/customizations/quote", {
         method: "POST",
         signal: controller.signal,
-        body: JSON.stringify({ category, color: color.name, size, quantity, placements }),
+        body: JSON.stringify({ category, color: color.name, size, quantity, designObjects }),
       })
         .then((nextQuote) => {
           setQuote(nextQuote);
@@ -216,10 +213,6 @@ export function Customizer() {
   async function submit() {
     setError("");
     setSuccess("");
-    if (!designObjects.length) {
-      setError("Add artwork or custom text before saving your design.");
-      return;
-    }
     if (!getAuthToken()) {
       window.sessionStorage.setItem("morpho_customizer_draft", JSON.stringify({ category, colorName, size, quantity, customText, description, designObjects }));
       setError("Sign in before adding this design to your cart. Your selections are saved in this browser; reselect artwork after signing in.");
@@ -235,7 +228,7 @@ export function Customizer() {
       form.set("quantity", String(quantity));
       form.set("description", description);
       form.set("designObjects", JSON.stringify(designObjects));
-      if (customText.text.trim()) form.set("customText", JSON.stringify(customText));
+      form.set("customText", JSON.stringify(customText));
       if (artwork.front) form.set("frontArtwork", artwork.front);
       if (artwork.back) form.set("backArtwork", artwork.back);
       form.set("removedArtworkPlacements", JSON.stringify((["front", "back"] as const).filter((placement) => !artworkUrls[placement])));
@@ -252,7 +245,7 @@ export function Customizer() {
   return (
     <div className="grid gap-10 lg:grid-cols-[minmax(20rem,0.78fr)_minmax(0,1.22fr)] lg:items-start">
       <div className="lg:sticky lg:top-28">
-        <DesignEditor key={editorVersion} color={color} side={activeSide} artworkUrls={artworkUrls} customText={customText} initialDesign={designObjects} onTextChange={setCustomText} onDesignChange={setDesignObjects} onRemoveArtwork={removeArtwork} />
+        <DesignEditor key={editorVersion} color={color} side={activeSide} defaultLogo={garment.defaultLogo} artworkUrls={artworkUrls} customText={customText} initialDesign={designObjects} onTextChange={setCustomText} onDesignChange={setDesignObjects} onRemoveArtwork={removeArtwork} />
         <p className="mt-3 text-xs leading-5 text-muted">Drag, scale, and rotate selected artwork or text inside the configured print area. Use two fingers to pinch and rotate on touch screens.</p>
       </div>
       

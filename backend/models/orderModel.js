@@ -117,7 +117,12 @@ const orderModel = mongoose.Schema(
                             fill : String,
                             textAlign : String
                         }
-                    ]
+                    ],
+                    defaultBranding : {
+                        applied : Boolean,
+                        side : { type : String, enum : ["front", "back"] },
+                        variant : { type : String, enum : ["black", "white"] }
+                    }
                 }
             }
         ],

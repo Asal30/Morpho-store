@@ -48,7 +48,8 @@ export async function createOrder(req, res) {
                             height : artwork.height
                         })),
                         customText : customization.customText,
-                        designObjects : customization.designObjects
+                        designObjects : customization.designObjects,
+                        defaultBranding : customization.defaultBranding
                     }
                 })
                 continue

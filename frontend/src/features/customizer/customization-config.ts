@@ -16,9 +16,18 @@ export interface CustomizationColor {
   backArea: PrintArea;
 }
 
+export interface DefaultLogoConfiguration {
+  side: CustomizationSide;
+  /** Placement normalized inside the configured print area. */
+  x: number;
+  y: number;
+  width: number;
+}
+
 interface GarmentConfiguration {
   sizes: readonly string[];
   colors: readonly CustomizationColor[];
+  defaultLogo: DefaultLogoConfiguration;
 }
 
 const singleShirtFront = { x: 35, y: 29, width: 30, height: 34 };
@@ -26,6 +35,7 @@ const singleShirtBack = { x: 35, y: 27, width: 30, height: 36 };
 
 export const customizationConfig: Record<CustomizationCategory, GarmentConfiguration> = {
   Oversize: {
+    defaultLogo: { side: "front", x: 0.5, y: 0.2, width: 0.34 },
     sizes: ["XS", "S", "M", "L", "XL"],
     colors: [
       ["Black", "#111111", "black"],
@@ -44,6 +54,7 @@ export const customizationConfig: Record<CustomizationCategory, GarmentConfigura
     })),
   },
   Raglan: {
+    defaultLogo: { side: "back", x: 0.5, y: 0.18, width: 0.34 },
     sizes: ["XS", "S", "M", "L", "2XL"],
     colors: [
       ["Black", "#111111", "black"],
@@ -59,5 +70,12 @@ export const customizationConfig: Record<CustomizationCategory, GarmentConfigura
     })),
   },
 };
+
+const whiteLogoColors = new Set(["Black", "Navy Blue", "Mint Green", "Aqua Blue", "Baby Pink", "Yellow"]);
+
+export function getDefaultMorphoLogo(colorName: string) {
+  const variant = whiteLogoColors.has(colorName) ? "white" : "black";
+  return { variant, src: `/images/customizer/logos/${variant}_logo.png` } as const;
+}
 
 export const customizerFonts = ["Manrope", "Cormorant Garamond", "Arial"] as const;

@@ -1,7 +1,12 @@
-import CategoryItem from "../models/categoryModel.js";
-import { customizationCosts, customizationCurrency, customizationRules } from "../config/customization.js";
+import { customizationCurrency, customizationRules } from "../config/customization.js";
 
-export async function calculateCustomizationPrice({ category, color, size, quantity, placements }) {
+export function getCustomerCustomizedSides(designObjects = []) {
+    return [...new Set(designObjects
+        .filter((object) => ["artwork", "text"].includes(object?.type) && ["front", "back"].includes(object?.placement))
+        .map((object) => object.placement))]
+}
+
+export async function calculateCustomizationPrice({ category, color, size, quantity, designObjects = [] }) {
     const rule = customizationRules[category]
     if (!rule) throw new Error("Unsupported customization category")
     if (!rule.colors.includes(color)) throw new Error("Unsupported color for this garment")
@@ -12,11 +17,11 @@ export async function calculateCustomizationPrice({ category, color, size, quant
         throw new Error("Quantity must be a positive integer")
     }
 
-    const categoryItem = await CategoryItem.findOne({ name : category })
-    const basePrice = categoryItem?.price ?? rule.fallbackBasePrice
-    const printedSides = new Set(placements).size
-    const printPrice = printedSides > 0
-        ? customizationCosts.firstPrint + Math.max(0, printedSides - 1) * customizationCosts.secondPrint
+    const basePrice = rule.basePrice
+    const customizedSides = getCustomerCustomizedSides(designObjects)
+    const customizedSideCount = customizedSides.length
+    const printPrice = customizedSideCount > 0
+        ? rule.firstCustomizedSide + Math.max(0, customizedSideCount - 1) * rule.secondCustomizedSide
         : 0
     const unitPrice = basePrice + printPrice
 
@@ -24,6 +29,8 @@ export async function calculateCustomizationPrice({ category, color, size, quant
         currency : customizationCurrency,
         basePrice,
         printPrice,
+        customizedSides,
+        customizedSideCount,
         unitPrice,
         quantity : normalizedQuantity,
         totalPrice : unitPrice * normalizedQuantity
