@@ -20,7 +20,7 @@ const actionLinks = [
 
 export function SiteHeader() {
   return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background">
+    <header data-storefront-chrome className="sticky top-0 z-40 border-b border-border bg-background">
       <Container className="grid min-h-16 grid-cols-[1fr_auto] items-center gap-2 lg:min-h-20 lg:grid-cols-[1fr_auto_1fr] lg:gap-6">
         <Link
           href="/"

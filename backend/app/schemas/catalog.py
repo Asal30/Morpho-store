@@ -59,6 +59,7 @@ class ProductResponse(BaseModel):
     prices: dict[CurrencyCode, PriceResponse]
     variants: list[VariantResponse]
     availability: Availability
+    displayOrder: int
 
 
 class ProductListResponse(BaseModel):
@@ -84,6 +85,7 @@ class CatalogOptionsResponse(BaseModel):
 
 
 class ProductImageCreate(BaseModel):
+    media_asset_id: str | None = None
     storage_key: str | None = None
     public_url: HttpUrl | None = None
     alt_text: str = Field(min_length=1, max_length=300)

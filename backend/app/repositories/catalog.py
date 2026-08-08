@@ -49,8 +49,8 @@ def list_products(session: Session, query: ProductQuery) -> ProductPage:
     if query.size:
         filters.append(Product.variants.any(ProductVariant.size.has(slug=query.size)))
 
-    statement = statement.where(*filters)
-    count_statement = count_statement.where(*filters)
+    statement = statement.where(Product.archived_at.is_(None), *filters)
+    count_statement = count_statement.where(Product.archived_at.is_(None), *filters)
 
     if query.sort == "name-asc":
         statement = statement.order_by(Product.name.asc(), Product.id.asc())
@@ -75,7 +75,9 @@ def list_products(session: Session, query: ProductQuery) -> ProductPage:
 
 def get_product_by_slug(session: Session, slug: str) -> Product | None:
     return session.scalar(
-        select(Product).where(Product.slug == slug).options(*_product_load_options())
+        select(Product)
+        .where(Product.slug == slug, Product.archived_at.is_(None))
+        .options(*_product_load_options())
     )
 
 

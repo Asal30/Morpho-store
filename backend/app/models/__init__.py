@@ -1,6 +1,8 @@
 from app.models.catalog import (
+    AdminSession,
     Color,
     GarmentType,
+    MediaAsset,
     PricingRule,
     Product,
     ProductImage,
@@ -12,7 +14,9 @@ from app.models.catalog import (
 
 __all__ = [
     "Color",
+    "AdminSession",
     "GarmentType",
+    "MediaAsset",
     "PricingRule",
     "Product",
     "ProductImage",

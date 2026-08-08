@@ -5,7 +5,7 @@ import { footerNavigation, socialChannels } from "@/config/navigation";
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-primary-light bg-primary text-secondary">
+    <footer data-storefront-chrome className="border-t border-primary-light bg-primary text-secondary">
       <Container className="py-section-sm">
         <div className="grid gap-14 lg:grid-cols-[1.2fr_1.8fr] lg:gap-20">
           <div className="max-w-sm">

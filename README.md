@@ -68,6 +68,20 @@ uv run uvicorn app.main:app --reload
 
 Open http://localhost:8000/health or http://localhost:8000/docs.
 
+## Admin setup
+
+Generate an Argon2 password hash from `backend`, then place the result in
+`ADMIN_PASSWORD_HASH` in your root `.env` file. Keep the value quoted when your
+shell or environment-file parser requires it.
+
+```bash
+uv run python -m app.services.auth
+```
+
+Set `ADMIN_USERNAME` as well, restart the API, and open
+http://localhost:3000/admin/login. Admin sessions use an HttpOnly cookie and
+state-changing requests require the separate CSRF token issued at login.
+
 ## Docker Compose startup
 
 ```bash

@@ -23,6 +23,17 @@ class Settings(BaseSettings):
     db_user: str = "morpho"
     db_password: str = "morpho_local"
     database_url_override: str | None = Field(default=None, validation_alias="DATABASE_URL")
+    admin_username: str = "admin"
+    admin_password_hash: str = "$argon2id$v=19$m=65536,t=3,p=4$6t6hsQWplK0C9nDoEbbDNg$O62jwv6Li7tanbm6BkZ2ACOHomwBPD2IUjdyBzURkxc"
+    admin_session_hours: int = 12
+    public_api_url: str = "http://localhost:8000"
+    media_storage_backend: str = "local"
+    media_storage_root: str = "storage/uploads"
+
+    @computed_field
+    @property
+    def secure_cookies(self) -> bool:
+        return self.environment == "production"
 
     @computed_field  # type: ignore[prop-decorator]
     @property

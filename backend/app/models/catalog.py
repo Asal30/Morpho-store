@@ -136,6 +136,7 @@ class Product(TimestampMixin, Base):
     )
     availability: Mapped[str] = mapped_column(String(20), default="available", nullable=False)
     display_order: Mapped[int] = mapped_column(Integer, default=0, nullable=False)
+    archived_at: Mapped[datetime | None] = mapped_column(DateTime, index=True)
 
     garment_type: Mapped[GarmentType] = relationship(lazy="joined")
     theme: Mapped[Theme | None] = relationship(lazy="joined")
@@ -163,6 +164,9 @@ class ProductImage(Base):
     product_id: Mapped[str] = mapped_column(
         ForeignKey("products.id", ondelete="CASCADE"), nullable=False, index=True
     )
+    media_asset_id: Mapped[str | None] = mapped_column(
+        ForeignKey("media_assets.id", ondelete="SET NULL"), index=True
+    )
     storage_key: Mapped[str | None] = mapped_column(String(500))
     public_url: Mapped[str | None] = mapped_column(String(1000))
     alt_text: Mapped[str] = mapped_column(String(300), nullable=False)
@@ -171,6 +175,7 @@ class ProductImage(Base):
     position: Mapped[int] = mapped_column(Integer, nullable=False)
     role: Mapped[str] = mapped_column(String(20), nullable=False)
     product: Mapped[Product] = relationship(back_populates="images")
+    media_asset: Mapped[MediaAsset | None] = relationship()
 
 
 class ProductVariant(TimestampMixin, Base):
@@ -212,3 +217,32 @@ class VariantPrice(Base):
     currency: Mapped[str] = mapped_column(String(3), nullable=False)
     amount_minor: Mapped[int] = mapped_column(Integer, nullable=False)
     variant: Mapped[ProductVariant] = relationship(back_populates="prices")
+
+
+class MediaAsset(TimestampMixin, Base):
+    __tablename__ = "media_assets"
+    __table_args__ = (
+        CheckConstraint("width > 0 AND height > 0", name="ck_media_asset_dimensions"),
+        CheckConstraint("size_bytes > 0", name="ck_media_asset_size"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_string)
+    storage_key: Mapped[str] = mapped_column(String(500), unique=True, nullable=False)
+    public_url: Mapped[str | None] = mapped_column(String(1000))
+    original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    mime_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    width: Mapped[int] = mapped_column(Integer, nullable=False)
+    height: Mapped[int] = mapped_column(Integer, nullable=False)
+
+
+class AdminSession(Base):
+    __tablename__ = "admin_sessions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uuid_string)
+    token_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
+    csrf_hash: Mapped[str] = mapped_column(String(64), nullable=False)
+    expires_at: Mapped[datetime] = mapped_column(DateTime, nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )

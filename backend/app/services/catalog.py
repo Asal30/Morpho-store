@@ -4,7 +4,15 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload
 
-from app.models import GarmentType, PricingRule, Product, ProductImage, ProductVariant, Theme
+from app.models import (
+    GarmentType,
+    MediaAsset,
+    PricingRule,
+    Product,
+    ProductImage,
+    ProductVariant,
+    Theme,
+)
 from app.repositories.catalog import ProductPage, ProductQuery, get_color, get_sizes, get_theme
 from app.repositories.catalog import get_product_by_slug as repository_get_product_by_slug
 from app.repositories.catalog import list_products as repository_list_products
@@ -105,6 +113,7 @@ def serialize_product(session: Session, product: Product) -> ProductResponse:
         prices=prices,
         variants=variants,
         availability=product.availability,
+        displayOrder=product.display_order,
     )
 
 
@@ -154,8 +163,9 @@ def get_catalog_options(session: Session) -> CatalogOptionsResponse:
     )
 
 
-def create_product(session: Session, payload: ProductCreate) -> Product:
-    """Internal mutation foundation. It is intentionally not exposed by public routes."""
+def resolve_product_configuration(
+    session: Session, payload: ProductCreate, current_product_id: str | None = None
+):
     garment = session.scalar(
         select(GarmentType)
         .where(GarmentType.slug == payload.garment_slug)
@@ -182,14 +192,51 @@ def create_product(session: Session, payload: ProductCreate) -> Product:
     allowed_size_ids = {item.id for item in garment.sizes}
     if len(sizes) != len(requested_sizes) or any(size.id not in allowed_size_ids for size in sizes):
         raise CatalogValidationError("Size is not available for this garment")
-    if session.scalar(select(Product.id).where(Product.slug == payload.slug)):
+    slug_statement = select(Product.id).where(Product.slug == payload.slug)
+    if current_product_id:
+        slug_statement = slug_statement.where(Product.id != current_product_id)
+    if session.scalar(slug_statement):
         raise CatalogValidationError("Product slug already exists")
     if sum(image.role == "primary" for image in payload.images) != 1:
         raise CatalogValidationError("A product requires exactly one primary image")
     if len({image.position for image in payload.images}) != len(payload.images):
         raise CatalogValidationError("Image positions must be unique")
-    if any(not image.storage_key and not image.public_url for image in payload.images):
+    if any(
+        not image.media_asset_id and not image.storage_key and not image.public_url
+        for image in payload.images
+    ):
         raise CatalogValidationError("Every image requires a storage reference")
+    return garment, theme, color, sorted(sizes, key=lambda item: item.display_order)
+
+
+def build_product_images(session: Session, payload: ProductCreate) -> list[ProductImage]:
+    images = []
+    for image in payload.images:
+        asset = session.get(MediaAsset, image.media_asset_id) if image.media_asset_id else None
+        if image.media_asset_id and asset is None:
+            raise CatalogValidationError("Unknown media asset")
+        images.append(
+            ProductImage(
+                media_asset=asset,
+                storage_key=asset.storage_key if asset else image.storage_key,
+                public_url=(
+                    asset.public_url
+                    if asset
+                    else (str(image.public_url) if image.public_url else None)
+                ),
+                alt_text=image.alt_text,
+                width=asset.width if asset else image.width,
+                height=asset.height if asset else image.height,
+                position=image.position,
+                role=image.role,
+            )
+        )
+    return images
+
+
+def create_product(session: Session, payload: ProductCreate) -> Product:
+    """Internal mutation foundation. It is intentionally not exposed by public routes."""
+    garment, theme, color, sizes = resolve_product_configuration(session, payload)
 
     product = Product(
         name=payload.name,
@@ -206,18 +253,7 @@ def create_product(session: Session, payload: ProductCreate) -> Product:
         ProductVariant(size=size, availability=payload.availability)
         for size in sorted(sizes, key=lambda item: item.display_order)
     ]
-    product.images = [
-        ProductImage(
-            storage_key=image.storage_key,
-            public_url=str(image.public_url) if image.public_url else None,
-            alt_text=image.alt_text,
-            width=image.width,
-            height=image.height,
-            position=image.position,
-            role=image.role,
-        )
-        for image in payload.images
-    ]
+    product.images = build_product_images(session, payload)
     session.add(product)
     session.flush()
     return product

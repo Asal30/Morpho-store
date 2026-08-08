@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.api.router import api_router
 from app.core.config import settings
@@ -30,3 +31,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(api_router)
+if settings.media_storage_backend == "local" and settings.environment != "production":
+    app.mount(
+        "/media", StaticFiles(directory=settings.media_storage_root, check_dir=False), name="media"
+    )

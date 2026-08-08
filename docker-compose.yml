@@ -34,11 +34,18 @@ services:
       DB_NAME: ${DB_NAME:-morpho_store}
       DB_USER: ${DB_USER:-morpho}
       DB_PASSWORD: ${DB_PASSWORD:-morpho_local}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:-}
+      ADMIN_SESSION_HOURS: ${ADMIN_SESSION_HOURS:-12}
+      PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:8000}
+      MEDIA_STORAGE_BACKEND: ${MEDIA_STORAGE_BACKEND:-local}
+      MEDIA_STORAGE_ROOT: /app/storage/uploads
     ports:
       - "8000:8000"
     volumes:
       - ./backend/app:/app/app
       - ./backend/migrations:/app/migrations
+      - media_uploads:/app/storage/uploads
     command:
       - sh
       - -c
@@ -73,3 +80,4 @@ services:
 volumes:
   mariadb_data:
   frontend_node_modules:
+  media_uploads:
