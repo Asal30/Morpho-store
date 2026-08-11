@@ -130,6 +130,7 @@ export function DesignEditor({
   }));
   const elementRef = useRef<HTMLCanvasElement>(null);
   const canvasRef = useRef<Canvas | null>(null);
+  const disposedRef = useRef(false);
   const sideRef = useRef(side);
   const heightRef = useRef(logicalHeight(color.frontArea));
   const recordsRef = useRef<Record<CustomizationSide, DesignObject[]>>(initialRecords);
@@ -162,6 +163,10 @@ export function DesignEditor({
     onDesignChange([...recordsRef.current.front, ...recordsRef.current.back]);
   }, [onDesignChange]);
 
+  const invalidatePendingLoads = useCallback(() => {
+    loadTokenRef.current += 1;
+  }, []);
+
   const updateSelection = useCallback(() => {
     const selected = canvasRef.current?.getActiveObject() as EditorObject | undefined;
     setSelection(selected ? {
@@ -185,12 +190,13 @@ export function DesignEditor({
     updateSelection();
   }, [notify, updateSelection]);
 
-  const addRecord = useCallback(async (canvas: Canvas, record: DesignObject, height: number) => {
+  const addRecord = useCallback(async (canvas: Canvas, record: DesignObject, height: number, isCurrent: () => boolean) => {
     let object: EditorObject;
     if (record.type === "artwork") {
       const url = artworkUrlsRef.current[record.placement];
       if (!url) return;
       const image = await FabricImage.fromURL(url, { crossOrigin: "anonymous" });
+      if (!isCurrent() || canvasRef.current !== canvas || disposedRef.current || canvas.destroyed) return;
       object = image as EditorObject;
       object.morphoAssetKey = record.assetKey;
       object.morphoSourceUrl = url;
@@ -202,6 +208,7 @@ export function DesignEditor({
         textAlign: record.textAlign,
       }) as EditorObject;
     }
+    if (!isCurrent() || canvasRef.current !== canvas || disposedRef.current || canvas.destroyed) return;
     object.morphoId = record.id;
     object.morphoType = record.type;
     object.set({
@@ -232,7 +239,7 @@ export function DesignEditor({
     canvas.setDimensions({ width: LOGICAL_WIDTH, height });
     fitCanvasDisplay(canvas);
     for (const record of [...records].sort((a, b) => a.zIndex - b.zIndex)) {
-      await addRecord(canvas, record, height);
+      await addRecord(canvas, record, height, () => token === loadTokenRef.current && sideRef.current === nextSide);
       if (token !== loadTokenRef.current) return;
     }
     canvas.requestRenderAll();
@@ -262,6 +269,7 @@ export function DesignEditor({
       uniformScaling: true,
       enableRetinaScaling: true,
     });
+    disposedRef.current = false;
     canvasRef.current = canvas;
     canvas.upperCanvasEl.style.touchAction = "none";
     fitCanvasDisplay(canvas);
@@ -359,25 +367,28 @@ export function DesignEditor({
       }
     };
     window.addEventListener("keydown", keyDown);
-    void loadSide(sideRef.current, recordsRef.current[sideRef.current]);
 
     return () => {
+      disposedRef.current = true;
+      invalidatePendingLoads();
+      pointers.clear();
+      gestureRef.current = null;
       window.clearTimeout(textTimerRef.current);
       window.removeEventListener("keydown", keyDown);
       upper.removeEventListener("pointerdown", pointerDown);
       upper.removeEventListener("pointermove", pointerMove);
       upper.removeEventListener("pointerup", pointerUp);
       upper.removeEventListener("pointercancel", pointerUp);
-      canvas.dispose();
       canvasRef.current = null;
+      void canvas.dispose();
     };
-  }, [commit, loadSide, moveHistory, onTextChange, updateSelection]);
+  }, [commit, invalidatePendingLoads, loadSide, moveHistory, onTextChange, updateSelection]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     if (sideRef.current !== side) {
-      notify(sideRef.current, snapshot(canvas, sideRef.current, heightRef.current));
+      if (!loadingRef.current) notify(sideRef.current, snapshot(canvas, sideRef.current, heightRef.current));
       sideRef.current = side;
     }
     const history = historiesRef.current[side];
@@ -388,6 +399,8 @@ export function DesignEditor({
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || loadingRef.current) return;
+    let cancelled = false;
+    const targetSide = side;
     const current = canvas.getObjects().find((object) => (object as EditorObject).morphoType === "artwork") as EditorObject | undefined;
     const url = artworkUrls[side];
     if (!url && current) {
@@ -398,12 +411,13 @@ export function DesignEditor({
     if (!url || current?.morphoSourceUrl === url) return;
     if (current) canvas.remove(current);
     void FabricImage.fromURL(url, { crossOrigin: "anonymous" }).then((image) => {
+      if (cancelled || disposedRef.current || canvasRef.current !== canvas || sideRef.current !== targetSide || canvas.destroyed) return;
       const object = image as EditorObject;
       const scale = Math.min((LOGICAL_WIDTH * 0.68) / (image.width || 1), (heightRef.current * 0.68) / (image.height || 1));
       object.set({ originX: "center", originY: "center", left: LOGICAL_WIDTH / 2, top: heightRef.current / 2, scaleX: scale, scaleY: scale });
       object.morphoId = crypto.randomUUID();
       object.morphoType = "artwork";
-      object.morphoAssetKey = side === "front" ? "frontArtwork" : "backArtwork";
+      object.morphoAssetKey = targetSide === "front" ? "frontArtwork" : "backArtwork";
       object.morphoSourceUrl = url;
       objectStyle(object);
       canvas.add(object);
@@ -411,6 +425,9 @@ export function DesignEditor({
       canvas.requestRenderAll();
       commit();
     });
+    return () => {
+      cancelled = true;
+    };
   }, [artworkUrls, commit, side]);
 
   useEffect(() => {
@@ -484,10 +501,16 @@ export function DesignEditor({
   return (
     <div>
       <div className="relative aspect-4/5 w-full overflow-hidden bg-surface-muted" aria-label={`${side} interactive customization editor`}>
-        <Image src={color.mockup} alt={`${color.name} T-shirt mockup, ${side} print view`} fill priority sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
+      {side === "front" ? 
+      <Image src={color.frontMockup} alt={`${color.name} T-shirt mockup, ${side} print view`} fill priority sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" /> 
+      :
+      <Image src={color.backMockup} alt={`${color.name} T-shirt mockup, ${side} print view`} fill priority sizes="(min-width: 1024px) 50vw, 100vw" className="object-cover" />
+      }
         <div className="absolute overflow-hidden ring-1 ring-accent/45 ring-offset-1 ring-offset-transparent" style={{ left: `${area.x}%`, top: `${area.y}%`, width: `${area.width}%`, height: `${area.height}%` }}>
           {showDefaultLogo ? <Image src={logo.src} alt={`Default MORPHO ${logo.variant} logo`} width={600} height={200} className="pointer-events-none absolute z-1 h-auto select-none object-contain" draggable={false} style={{ left: `${defaultLogo.x * 100}%`, top: `${defaultLogo.y * 100}%`, width: `${defaultLogo.width * 100}%`, transform: "translate(-50%, -50%)" }} /> : null}
-          <canvas ref={elementRef} />
+          <div className="absolute inset-0 z-2" data-fabric-host>
+            <canvas ref={elementRef} />
+          </div>
         </div>
         <span className="absolute top-4 left-4 bg-primary/85 px-3 py-1 text-[0.625rem] font-semibold tracking-[0.16em] text-surface uppercase">{side} editor</span>
       </div>

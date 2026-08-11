@@ -282,7 +282,7 @@ export function Customizer() {
 
         <div>
           <label htmlFor="artwork" className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">4. {activeSide} artwork</label>
-          <Input id="artwork" type="file" accept="image/png,image/jpeg,image/webp" className="mt-3 pt-2.5" onChange={(event) => chooseArtwork(event.target.files?.[0])} />
+          <Input id="artwork" type="file" accept="image/png,image/jpeg,image/webp" className="mt-3 pt-2.5" onChange={(event) => { chooseArtwork(event.target.files?.[0]); event.currentTarget.value = ""; }} />
           {artworkUrls[activeSide] ? <div className="mt-2 flex items-center justify-between gap-4 text-xs text-muted"><span className="truncate">{artwork[activeSide]?.name ?? `Saved ${activeSide} artwork`}</span><button type="button" className="font-semibold text-destructive" onClick={() => removeArtwork(activeSide)}>Remove</button></div> : null}
         </div>
 
@@ -291,7 +291,7 @@ export function Customizer() {
           <Input id="custom-text" maxLength={80} value={customText.text} placeholder="Your memory, in words" onChange={(event) => setCustomText((current) => ({ ...current, text: event.target.value, placement: activeSide }))} />
           <div className="grid grid-cols-2 gap-3">
             <Select aria-label="Text font" value={customText.font} onChange={(event) => setCustomText((current) => ({ ...current, font: event.target.value }))}>{customizerFonts.map((font) => <option key={font}>{font}</option>)}</Select>
-            <Input aria-label="Text size" type="number" min={8} max={96} value={customText.fontSize} onChange={(event) => setCustomText((current) => ({ ...current, fontSize: Number(event.target.value) }))} />
+            <Input aria-label="Text size" type="number" min={8} max={96} value={customText.fontSize} onChange={(event) => setCustomText((current) => ({ ...current, fontSize: Math.min(96, Math.max(8, Number(event.target.value) || 8)) }))} />
             <Input aria-label="Text color" type="color" value={customText.color} onChange={(event) => setCustomText((current) => ({ ...current, color: event.target.value }))} />
             <Select aria-label="Text alignment" value={customText.alignment} onChange={(event) => setCustomText((current) => ({ ...current, alignment: event.target.value as CustomTextState["alignment"] }))}><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></Select>
           </div>
@@ -299,7 +299,7 @@ export function Customizer() {
 
         <div className="grid grid-cols-2 gap-4">
           <label className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">6. Size<Select className="mt-2 normal-case" value={size} onChange={(event) => setSize(event.target.value)}>{garment.sizes.map((value) => <option key={value}>{value}</option>)}</Select></label>
-          <label className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">7. Quantity<Input className="mt-2 normal-case" type="number" min={1} max={20} value={quantity} onChange={(event) => setQuantity(Math.max(1, Number(event.target.value)))} /></label>
+          <label className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">7. Quantity<Input className="mt-2 normal-case" type="number" min={1} max={20} value={quantity} onChange={(event) => setQuantity(Math.min(20, Math.max(1, Number(event.target.value) || 1)))} /></label>
         </div>
 
         <label htmlFor="design-notes" className="block text-xs font-semibold tracking-[0.16em] text-primary uppercase">Design notes<Textarea id="design-notes" className="mt-2 normal-case" maxLength={500} value={description} onChange={(event) => setDescription(event.target.value)} /></label>

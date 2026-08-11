@@ -11,7 +11,8 @@ export interface PrintArea {
 export interface CustomizationColor {
   name: string;
   swatch: string;
-  mockup: string;
+  frontMockup: string;
+  backMockup: string;
   frontArea: PrintArea;
   backArea: PrintArea;
 }
@@ -35,36 +36,38 @@ const singleShirtBack = { x: 35, y: 27, width: 30, height: 36 };
 
 export const customizationConfig: Record<CustomizationCategory, GarmentConfiguration> = {
   Oversize: {
-    defaultLogo: { side: "front", x: 0.5, y: 0.2, width: 0.34 },
+    defaultLogo: { side: "front", x: 0.5, y: 0.15, width: 0.45 },
     sizes: ["XS", "S", "M", "L", "XL"],
     colors: [
       ["Black", "#111111", "black"],
       ["White", "#F4F1E8", "white"],
-      ["Navy Blue", "#18243D", "navy-blue"],
-      ["Aqua Blue", "#70CFE3", "aqua-blue"],
-      ["Mint Green", "#A9D8C0", "mint-green"],
-      ["Baby Pink", "#E9B8C4", "baby-pink"],
-      ["Yellow", "#E7C94B", "yellow"],
+      ["Navy Blue", "#08034e", "navy-blue"],
+      ["Aqua Blue", "#6cc0d9", "aqua-blue"],
+      ["Mint Green", "#bee9b8", "mint-green"],
+      ["Baby Pink", "#fc99e6d6", "baby-pink"],
+      ["Yellow", "#f3e241", "yellow"],
     ].map(([name, swatch, file]) => ({
       name,
       swatch,
-      mockup: `/images/customizer/mockups/oversize/${file}.png`,
+      frontMockup: `/images/customizer/mockups/oversize/${file}.png`,
+      backMockup: `/images/customizer/mockups/oversize/${file}_back.png`,
       frontArea: singleShirtFront,
       backArea: singleShirtBack,
     })),
   },
   Raglan: {
-    defaultLogo: { side: "back", x: 0.5, y: 0.18, width: 0.34 },
-    sizes: ["XS", "S", "M", "L", "2XL"],
+    defaultLogo: { side: "front", x: 0.5, y: 0.18, width: 0.34 },
+    sizes: ["S", "M", "L", "2XL"],
     colors: [
       ["Black", "#111111", "black"],
-      ["Blue", "#315A8C", "blue"],
-      ["Red", "#A33B3B", "red"],
-      ["Pink", "#D78FA7", "pink"],
+      ["Blue", "#011384", "blue"],
+      ["Red", "#FF0000", "red"],
+      ["Pink", "#ff53c9", "pink"],
     ].map(([name, swatch, file]) => ({
       name,
       swatch,
-      mockup: `/images/customizer/mockups/raglan/${file}.png`,
+      frontMockup: `/images/customizer/mockups/raglan/${file}.png`,
+      backMockup: `/images/customizer/mockups/raglan/${file}_back.png`,
       frontArea: singleShirtFront,
       backArea: singleShirtBack,
     })),
