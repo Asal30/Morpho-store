@@ -28,6 +28,20 @@ function parseJson(value, message) {
     }
 }
 
+function parseBrandingPosition(value, fallback = {}) {
+    const position = parseJson(value, "Invalid default branding position") ?? fallback
+    const normalizedX = Number(position.normalizedX)
+    const normalizedY = Number(position.normalizedY)
+    if ((position.normalizedX !== undefined && (!Number.isFinite(normalizedX) || normalizedX < 0 || normalizedX > 1)) ||
+        (position.normalizedY !== undefined && (!Number.isFinite(normalizedY) || normalizedY < 0 || normalizedY > 1))) {
+        throw new Error("Invalid default branding position")
+    }
+    return {
+        ...(position.normalizedX === undefined ? {} : { normalizedX }),
+        ...(position.normalizedY === undefined ? {} : { normalizedY })
+    }
+}
+
 function parseDesignObjects(value) {
     const objects = parseJson(value, "Invalid design configuration")
     if (objects === undefined) return undefined
@@ -60,7 +74,7 @@ function parseDesignObjects(value) {
             throw new Error("Invalid design configuration")
         }
         if (object.type === "text" && (!object.text?.trim() || !["left", "center", "right"].includes(object.textAlign) ||
-            !Number.isFinite(Number(object.fontSize)) || Number(object.fontSize) < 8 || Number(object.fontSize) > 96)) {
+            !Number.isFinite(Number(object.fontSize)) || Number(object.fontSize) < 10 || Number(object.fontSize) > 150)) {
             throw new Error("Invalid design configuration")
         }
         return object.type === "artwork"
@@ -140,6 +154,7 @@ export async function createCustomizationRequest(req, res) {
     try {
         const customText = parseCustomText(req.body.customText)
         const designObjects = parseDesignObjects(req.body.designObjects) ?? []
+        const brandingPosition = parseBrandingPosition(req.body.defaultBrandingPosition)
         const files = artworkFiles(req)
         validateCustomerContent(designObjects, files.map((entry) => entry.placement), customText)
 
@@ -159,7 +174,7 @@ export async function createCustomizationRequest(req, res) {
             artwork,
             customText,
             designObjects,
-            defaultBranding : getDefaultBranding(req.body.category, req.body.color, designObjects),
+            defaultBranding : getDefaultBranding(req.body.category, req.body.color, designObjects, brandingPosition),
             price : quote.totalPrice,
             unitPrice : quote.unitPrice,
             totalPrice : quote.totalPrice,
@@ -181,7 +196,7 @@ export async function createCustomizationRequest(req, res) {
         if (error.message === "Cloudinary is not configured") {
             return sendError(res, 503, "Artwork upload is not configured")
         }
-        if (["Invalid custom text configuration", "Invalid design configuration", "Artwork and design configuration do not match", "Custom text and design configuration do not match"].includes(error.message) || error.message?.startsWith("Unsupported") || error.message?.startsWith("Quantity")) {
+        if (["Invalid custom text configuration", "Invalid design configuration", "Invalid default branding position", "Artwork and design configuration do not match", "Custom text and design configuration do not match"].includes(error.message) || error.message?.startsWith("Unsupported") || error.message?.startsWith("Quantity")) {
             return sendError(res, 400, error.message)
         }
         return handleControllerError(error, res)
@@ -219,6 +234,7 @@ export async function updateMyCustomizationRequest(req, res) {
 
         const customText = parseCustomText(req.body.customText) ?? current.customText
         const designObjects = parseDesignObjects(req.body.designObjects) ?? current.designObjects
+        const brandingPosition = parseBrandingPosition(req.body.defaultBrandingPosition, current.defaultBranding)
         const removedPlacements = parseJson(req.body.removedArtworkPlacements, "Invalid artwork removal configuration") ?? []
         if (!Array.isArray(removedPlacements) || removedPlacements.some((placement) => !["front", "back"].includes(placement))) {
             return sendError(res, 400, "Invalid artwork removal configuration")
@@ -245,7 +261,7 @@ export async function updateMyCustomizationRequest(req, res) {
             designObjects
         })
         Object.assign(current, nextFields, {
-            defaultBranding : getDefaultBranding(nextFields.category ?? current.category, nextFields.color ?? current.color, designObjects),
+            defaultBranding : getDefaultBranding(nextFields.category ?? current.category, nextFields.color ?? current.color, designObjects, brandingPosition),
             price : quote.totalPrice,
             unitPrice : quote.unitPrice,
             totalPrice : quote.totalPrice
@@ -260,7 +276,7 @@ export async function updateMyCustomizationRequest(req, res) {
         if (error.message === "Cloudinary is not configured") {
             return sendError(res, 503, "Artwork upload is not configured")
         }
-        if (["Invalid custom text configuration", "Invalid design configuration", "Invalid artwork removal configuration", "Artwork and design configuration do not match", "Custom text and design configuration do not match"].includes(error.message) || error.message?.startsWith("Unsupported") || error.message?.startsWith("Quantity")) {
+        if (["Invalid custom text configuration", "Invalid design configuration", "Invalid artwork removal configuration", "Invalid default branding position", "Artwork and design configuration do not match", "Custom text and design configuration do not match"].includes(error.message) || error.message?.startsWith("Unsupported") || error.message?.startsWith("Quantity")) {
             return sendError(res, 400, error.message)
         }
         return handleControllerError(error, res)

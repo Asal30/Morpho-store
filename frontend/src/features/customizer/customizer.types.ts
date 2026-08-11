@@ -58,3 +58,8 @@ export interface TextDesignObject extends DesignTransform {
 }
 
 export type DesignObject = ArtworkDesignObject | TextDesignObject;
+
+export interface DefaultBrandingPosition {
+  normalizedX: number;
+  normalizedY: number;
+}

@@ -56,7 +56,7 @@ export const customizationConfig: Record<CustomizationCategory, GarmentConfigura
     })),
   },
   Raglan: {
-    defaultLogo: { side: "front", x: 0.5, y: 0.18, width: 0.34 },
+    defaultLogo: { side: "front", x: 0.5, y: 0.18, width: 0.45 },
     sizes: ["S", "M", "L", "2XL"],
     colors: [
       ["Black", "#111111", "black"],
@@ -74,10 +74,10 @@ export const customizationConfig: Record<CustomizationCategory, GarmentConfigura
   },
 };
 
-const whiteLogoColors = new Set(["Black", "Navy Blue", "Mint Green", "Aqua Blue", "Baby Pink", "Yellow"]);
+const oversizedWhiteLogoColors = new Set(["Black", "Navy Blue", "Mint Green", "Aqua Blue", "Baby Pink", "Yellow"]);
 
-export function getDefaultMorphoLogo(colorName: string) {
-  const variant = whiteLogoColors.has(colorName) ? "white" : "black";
+export function getDefaultMorphoLogo(category: CustomizationCategory, colorName: string) {
+  const variant = category === "Oversize" && oversizedWhiteLogoColors.has(colorName) ? "white" : "black";
   return { variant, src: `/images/customizer/logos/${variant}_logo.png` } as const;
 }
 

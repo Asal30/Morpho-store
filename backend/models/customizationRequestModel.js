@@ -89,8 +89,8 @@ const customizationRequestModel = mongoose.Schema(
             },
             fontSize : {
                 type : Number,
-                min : 8,
-                max : 96
+                min : 10,
+                max : 150
             },
             color : {
                 type : String,
@@ -122,7 +122,7 @@ const customizationRequestModel = mongoose.Schema(
                 assetKey : { type : String, enum : ["frontArtwork", "backArtwork"] },
                 text : { type : String, maxlength : 80, trim : true },
                 fontFamily : { type : String, enum : ["Manrope", "Cormorant Garamond", "Arial"] },
-                fontSize : { type : Number, min : 8, max : 96 },
+                fontSize : { type : Number, min : 10, max : 150 },
                 fill : { type : String, maxlength : 20, trim : true },
                 textAlign : { type : String, enum : ["left", "center", "right"] }
             }
@@ -130,7 +130,9 @@ const customizationRequestModel = mongoose.Schema(
         defaultBranding : {
             applied : { type : Boolean, default : true },
             side : { type : String, enum : ["front", "back"] },
-            variant : { type : String, enum : ["black", "white"] }
+            variant : { type : String, enum : ["black", "white"] },
+            normalizedX : { type : Number, min : 0, max : 1 },
+            normalizedY : { type : Number, min : 0, max : 1 }
         },
         description : {
             type : String,

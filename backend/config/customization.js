@@ -5,7 +5,8 @@ export const customizationRules = {
         basePrice : 250000,
         firstCustomizedSide : 30000,
         secondCustomizedSide : 40000,
-        defaultBrandingSide : "front"
+        defaultBrandingSide : "front",
+        defaultBrandingPosition : { normalizedX : 0.5, normalizedY : 0.15 }
     },
     Raglan : {
         colors : ["Black", "Blue", "Red", "Pink"],
@@ -13,20 +14,24 @@ export const customizationRules = {
         basePrice : 220000,
         firstCustomizedSide : 30000,
         secondCustomizedSide : 30000,
-        defaultBrandingSide : "back"
+        defaultBrandingSide : "back",
+        defaultBrandingPosition : { normalizedX : 0.5, normalizedY : 0.18 }
     }
 }
 
 export const customizationCurrency = "LKR"
 
-const whiteLogoColors = new Set(["Black", "Navy Blue", "Mint Green", "Aqua Blue", "Baby Pink", "Yellow"])
+const oversizedWhiteLogoColors = new Set(["Black", "Navy Blue", "Mint Green", "Aqua Blue", "Baby Pink", "Yellow"])
 
-export function getDefaultBranding(category, color, designObjects = []) {
-    const side = customizationRules[category]?.defaultBrandingSide
-    if (!side) throw new Error("Unsupported customization category")
+export function getDefaultBranding(category, color, designObjects = [], position = {}) {
+    const rule = customizationRules[category]
+    if (!rule) throw new Error("Unsupported customization category")
+    const side = rule.defaultBrandingSide
     return {
         applied : !designObjects.some((object) => ["artwork", "text"].includes(object?.type) && object?.placement === side),
         side,
-        variant : whiteLogoColors.has(color) ? "white" : "black"
+        variant : category === "Oversize" && oversizedWhiteLogoColors.has(color) ? "white" : "black",
+        normalizedX : position.normalizedX ?? rule.defaultBrandingPosition.normalizedX,
+        normalizedY : position.normalizedY ?? rule.defaultBrandingPosition.normalizedY
     }
 }

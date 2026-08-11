@@ -12,13 +12,14 @@ import { useRegion } from "@/features/region/region-provider";
 import { apiRequest, getAuthToken } from "@/lib/api-client";
 
 import { customizationConfig, customizerFonts, type CustomizationCategory, type CustomizationSide } from "./customization-config";
-import type { CustomizationQuote, CustomTextState, DesignObject } from "./customizer.types";
+import type { CustomizationQuote, CustomTextState, DefaultBrandingPosition, DesignObject } from "./customizer.types";
 import { DesignEditor } from "./design-editor";
+import { EditorGuide } from "./editor-guide";
 
 const initialText: CustomTextState = {
   text: "",
   font: "Manrope",
-  fontSize: 32,
+  fontSize: 72,
   color: "#111111",
   alignment: "center",
   placement: "front",
@@ -32,6 +33,7 @@ interface SavedDraft {
   customText?: CustomTextState;
   description?: string;
   designObjects?: DesignObject[];
+  brandingPosition?: DefaultBrandingPosition;
 }
 
 interface SavedCustomization {
@@ -44,6 +46,7 @@ interface SavedCustomization {
   customText?: CustomTextState;
   artwork: Array<{ secureUrl: string; placement: CustomizationSide }>;
   designObjects?: DesignObject[];
+  defaultBranding?: Partial<DefaultBrandingPosition>;
 }
 
 function legacyDesign(saved: SavedCustomization): DesignObject[] {
@@ -108,6 +111,10 @@ export function Customizer() {
   const [existingArtworkUrls, setExistingArtworkUrls] = useState<Partial<Record<CustomizationSide, string>>>({});
   const [customText, setCustomText] = useState<CustomTextState>(initialText);
   const [designObjects, setDesignObjects] = useState<DesignObject[]>([]);
+  const [brandingPosition, setBrandingPosition] = useState<DefaultBrandingPosition>(() => ({
+    normalizedX: customizationConfig.Oversize.defaultLogo.x,
+    normalizedY: customizationConfig.Oversize.defaultLogo.y,
+  }));
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editorVersion, setEditorVersion] = useState(0);
   const [description, setDescription] = useState("Customer-created MORPHO T-shirt design");
@@ -128,6 +135,7 @@ export function Customizer() {
       if (draft.customText) setCustomText(draft.customText);
       if (draft.description) setDescription(draft.description);
       if (draft.designObjects) setDesignObjects(draft.designObjects);
+      if (draft.brandingPosition) setBrandingPosition(draft.brandingPosition);
     });
   }, []);
 
@@ -145,6 +153,10 @@ export function Customizer() {
         if (saved.customText?.text) setCustomText(saved.customText);
         setExistingArtworkUrls(Object.fromEntries(saved.artwork.map((item) => [item.placement, item.secureUrl])));
         setDesignObjects(saved.designObjects?.length ? saved.designObjects : legacyDesign(saved));
+        setBrandingPosition({
+          normalizedX: saved.defaultBranding?.normalizedX ?? customizationConfig[saved.category].defaultLogo.x,
+          normalizedY: saved.defaultBranding?.normalizedY ?? customizationConfig[saved.category].defaultLogo.y,
+        });
         setEditorVersion((value) => value + 1);
       })
       .catch((reason: unknown) => setError(reason instanceof Error ? reason.message : "Unable to reopen this customization"));
@@ -191,6 +203,7 @@ export function Customizer() {
     const next = customizationConfig[nextCategory];
     setCategory(nextCategory);
     setColorName(next.colors[0].name);
+    setBrandingPosition({ normalizedX: next.defaultLogo.x, normalizedY: next.defaultLogo.y });
     if (!next.sizes.includes(size)) setSize(next.sizes[0]);
   }
 
@@ -214,7 +227,7 @@ export function Customizer() {
     setError("");
     setSuccess("");
     if (!getAuthToken()) {
-      window.sessionStorage.setItem("morpho_customizer_draft", JSON.stringify({ category, colorName, size, quantity, customText, description, designObjects }));
+      window.sessionStorage.setItem("morpho_customizer_draft", JSON.stringify({ category, colorName, size, quantity, customText, description, designObjects, brandingPosition }));
       setError("Sign in before adding this design to your cart. Your selections are saved in this browser; reselect artwork after signing in.");
       return;
     }
@@ -228,6 +241,7 @@ export function Customizer() {
       form.set("quantity", String(quantity));
       form.set("description", description);
       form.set("designObjects", JSON.stringify(designObjects));
+      form.set("defaultBrandingPosition", JSON.stringify(brandingPosition));
       form.set("customText", JSON.stringify(customText));
       if (artwork.front) form.set("frontArtwork", artwork.front);
       if (artwork.back) form.set("backArtwork", artwork.back);
@@ -245,8 +259,8 @@ export function Customizer() {
   return (
     <div className="grid gap-10 lg:grid-cols-[minmax(20rem,0.78fr)_minmax(0,1.22fr)] lg:items-start">
       <div className="lg:sticky lg:top-28">
-        <DesignEditor key={editorVersion} color={color} side={activeSide} defaultLogo={garment.defaultLogo} artworkUrls={artworkUrls} customText={customText} initialDesign={designObjects} onTextChange={setCustomText} onDesignChange={setDesignObjects} onRemoveArtwork={removeArtwork} />
-        <p className="mt-3 text-xs leading-5 text-muted">Drag, scale, and rotate selected artwork or text inside the configured print area. Use two fingers to pinch and rotate on touch screens.</p>
+        <DesignEditor key={editorVersion} category={category} color={color} side={activeSide} defaultLogo={garment.defaultLogo} brandingPosition={brandingPosition} artworkUrls={artworkUrls} customText={customText} initialDesign={designObjects} onBrandingPositionChange={setBrandingPosition} onTextChange={setCustomText} onDesignChange={setDesignObjects} onRemoveArtwork={removeArtwork} />
+        <EditorGuide />
       </div>
       
       <div className="space-y-9 lg:order-1">
@@ -291,7 +305,7 @@ export function Customizer() {
           <Input id="custom-text" maxLength={80} value={customText.text} placeholder="Your memory, in words" onChange={(event) => setCustomText((current) => ({ ...current, text: event.target.value, placement: activeSide }))} />
           <div className="grid grid-cols-2 gap-3">
             <Select aria-label="Text font" value={customText.font} onChange={(event) => setCustomText((current) => ({ ...current, font: event.target.value }))}>{customizerFonts.map((font) => <option key={font}>{font}</option>)}</Select>
-            <Input aria-label="Text size" type="number" min={8} max={96} value={customText.fontSize} onChange={(event) => setCustomText((current) => ({ ...current, fontSize: Math.min(96, Math.max(8, Number(event.target.value) || 8)) }))} />
+            <Input aria-label="Text size" type="number" min={10} max={150} value={customText.fontSize} onChange={(event) => setCustomText((current) => ({ ...current, fontSize: Math.min(150, Math.max(10, Number(event.target.value) || 10)) }))} />
             <Input aria-label="Text color" type="color" value={customText.color} onChange={(event) => setCustomText((current) => ({ ...current, color: event.target.value }))} />
             <Select aria-label="Text alignment" value={customText.alignment} onChange={(event) => setCustomText((current) => ({ ...current, alignment: event.target.value as CustomTextState["alignment"] }))}><option value="left">Left</option><option value="center">Center</option><option value="right">Right</option></Select>
           </div>

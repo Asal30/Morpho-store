@@ -116,12 +116,13 @@ test("customization API enforces upload, ownership, pricing, cart, and order bou
     form.set("customText", JSON.stringify({
         text : "MORPHO",
         font : "Manrope",
-        fontSize : 32,
+        fontSize : 72,
         color : "#111111",
         alignment : "center",
         placement : "front"
     }))
     form.set("designObjects", JSON.stringify([textDesign]))
+    form.set("defaultBrandingPosition", JSON.stringify({ normalizedX : 0.27, normalizedY : 0.41 }))
     const created = await read(await fetch(`${baseUrl}/api/customizations`, {
         method : "POST",
         headers : authorization,
@@ -131,8 +132,10 @@ test("customization API enforces upload, ownership, pricing, cart, and order bou
     assert.equal(created.body.data.customization.unitPrice, 280000)
     assert.equal(created.body.data.customization.totalPrice, 560000)
     assert.equal(created.body.data.customization.defaultBranding.side, "front")
-    assert.equal(created.body.data.customization.defaultBranding.variant, "white")
+    assert.equal(created.body.data.customization.defaultBranding.variant, "black")
     assert.equal(created.body.data.customization.defaultBranding.applied, false)
+    assert.equal(created.body.data.customization.defaultBranding.normalizedX, 0.27)
+    assert.equal(created.body.data.customization.defaultBranding.normalizedY, 0.41)
     assert.equal(created.body.data.customization.designObjects[0].rotation, -20)
     assert.equal(created.body.data.customization.designObjects[0].scaleX, 1.4)
     assert.equal(cart.items.length, 1)
@@ -209,8 +212,10 @@ test("customization API enforces upload, ownership, pricing, cart, and order bou
     assert.equal(orderPayload.items[0].customizationSnapshot.designObjects[0].rotation, -20)
     assert.equal(orderPayload.items[0].customizationSnapshot.designObjects[0].scaleX, 1.4)
     assert.equal(orderPayload.items[0].customizationSnapshot.defaultBranding.side, "front")
-    assert.equal(orderPayload.items[0].customizationSnapshot.defaultBranding.variant, "white")
+    assert.equal(orderPayload.items[0].customizationSnapshot.defaultBranding.variant, "black")
     assert.equal(orderPayload.items[0].customizationSnapshot.defaultBranding.applied, false)
+    assert.equal(orderPayload.items[0].customizationSnapshot.defaultBranding.normalizedX, 0.27)
+    assert.equal(orderPayload.items[0].customizationSnapshot.defaultBranding.normalizedY, 0.41)
 
     Item.findById = async () => ({
         _id : "507f1f77bcf86cd799439014",

@@ -41,15 +41,20 @@ test("quantity applies to the authoritative unit price", async () => {
 })
 
 test("default MORPHO branding uses category side and garment-color variant", () => {
-    for (const color of ["Black", "Navy Blue", "Mint Green", "Aqua Blue", "Baby Pink", "Yellow"]) {
+    for (const color of ["Navy Blue", "Mint Green", "Aqua Blue", "Baby Pink", "Yellow"]) {
         assert.equal(getDefaultBranding("Oversize", color).variant, "white")
     }
-    for (const color of ["White", "Blue", "Red", "Pink"]) {
-        assert.equal(getDefaultBranding(color === "White" ? "Oversize" : "Raglan", color).variant, "black")
+    for (const color of ["Black", "White"]) {
+        assert.equal(getDefaultBranding("Oversize", color).variant, "black")
+    }
+    for (const color of ["Black", "Blue", "Red", "Pink"]) {
+        assert.equal(getDefaultBranding("Raglan", color).variant, "black")
     }
     assert.equal(getDefaultBranding("Oversize", "White").side, "front")
     assert.equal(getDefaultBranding("Raglan", "Black").side, "back")
     assert.equal(getDefaultBranding("Oversize", "White", [artwork("front")]).applied, false)
     assert.equal(getDefaultBranding("Oversize", "White", [artwork("back")]).applied, true)
     assert.equal(getDefaultBranding("Raglan", "Black", [text("back")]).applied, false)
+    assert.equal(getDefaultBranding("Oversize", "White", [], { normalizedX : 0.27, normalizedY : 0.41 }).normalizedX, 0.27)
+    assert.equal(getDefaultBranding("Oversize", "White", [], { normalizedX : 0.27, normalizedY : 0.41 }).normalizedY, 0.41)
 })
