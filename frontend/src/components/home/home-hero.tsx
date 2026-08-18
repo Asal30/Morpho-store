@@ -1,49 +1,26 @@
 import { Container } from "@/components/layout/container";
 import { HomeLink } from "@/components/home/home-link";
-import { CylinderCarousel } from "@/components/ui/cylinder-carousel";
-import { heroImages } from "@/config/home";
 
 export function HomeHero() {
   return (
-    <section className="relative isolate overflow-hidden bg-primary text-surface">
-      <Container className="relative grid min-h-[calc(100svh-6rem)] content-center gap-4 py-10 sm:py-14 lg:min-h-[calc(100svh-7rem)] lg:grid-cols-[0.82fr_1.18fr] lg:items-center lg:gap-0 lg:py-8">
-        <div className="relative z-10 lg:py-10">
-          <p className="mb-5 text-caption font-semibold tracking-[0.28em] text-accent uppercase">
-            MORPHO · Sri Lanka
-          </p>
-          <h1 className="font-display text-[clamp(3.9rem,16vw,7rem)] leading-[0.76] font-medium tracking-[-0.045em] text-surface lg:text-[clamp(6rem,9vw,9.5rem)]">
-            <span className="block">Wear</span>
-            <span className="block pl-[0.28em] italic text-secondary">Your</span>
-            <span className="block">Memories.</span>
+    <section data-home-video-hero className="relative isolate min-h-[calc(100vh-2rem)] min-h-[calc(100svh-2rem)] overflow-hidden bg-primary bg-[url('/images/home/hero/morpho-01.webp')] bg-cover bg-[58%_center] text-surface sm:bg-center">
+      <video autoPlay muted loop playsInline preload="metadata" poster="/images/home/hero/morpho-01.webp" aria-hidden="true" tabIndex={-1} className="absolute inset-0 size-full object-cover object-[58%_center] motion-reduce:hidden sm:object-center">
+        <source src="/videos/homepage-video.mp4" type="video/mp4" />
+      </video>
+      <div className="absolute inset-0 bg-gradient-to-r from-primary/70 via-primary/25 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-primary/55 via-transparent to-primary/20" />
+
+      <Container className="relative z-10 flex min-h-[calc(100vh-2rem)] min-h-[calc(100svh-2rem)] items-end pb-12 pt-28 sm:pb-16 lg:pb-20 lg:pt-32">
+        <div className="max-w-3xl">
+          <p className="mb-4 text-caption font-semibold tracking-[0.28em] text-accent uppercase">MORPHO · Sri Lanka</p>
+          <h1 className="font-display text-[clamp(4rem,15vw,8.5rem)] leading-[0.78] font-medium tracking-[-0.045em] text-surface drop-shadow-sm">
+            Wear Your <span className="italic text-secondary">Memories.</span>
           </h1>
-          <p className="mt-7 max-w-xs text-body-sm leading-6 text-secondary/65">
-            Old memories. New silhouettes.
-          </p>
+          <p className="mt-6 max-w-xs text-body-sm leading-6 text-secondary/80">Old memories. New silhouettes.</p>
           <div className="mt-7 flex flex-col gap-3 min-[390px]:flex-row">
             <HomeLink href="/shop" tone="light">Shop Collection</HomeLink>
-            <HomeLink
-              href="/customize"
-              className="border-surface/30 bg-transparent text-surface hover:border-accent hover:bg-transparent"
-            >
-              Create Yours
-            </HomeLink>
+            <HomeLink href="/customize" className="border-surface/45 bg-primary/15 text-surface backdrop-blur-sm hover:border-accent hover:bg-primary/25">Create Yours</HomeLink>
           </div>
-        </div>
-
-        <div className="relative -mx-5 -mt-2 min-h-72 sm:-mx-8 lg:-mx-16 lg:mt-0">
-          <p className="sr-only">
-            A rotating gallery of MORPHO campaign looks and original T-shirt artwork.
-          </p>
-          <CylinderCarousel
-            images={heroImages}
-            animationDuration={54}
-            cardWidth={248}
-            className="lg:min-h-[36rem]"
-            cardClassName="border-surface/20"
-          />
-          <p className="absolute right-5 bottom-1 text-[0.625rem] font-semibold tracking-[0.18em] text-secondary/40 uppercase sm:right-8 lg:right-16 lg:bottom-8">
-            Campaign 01 · In rotation
-          </p>
         </div>
       </Container>
     </section>

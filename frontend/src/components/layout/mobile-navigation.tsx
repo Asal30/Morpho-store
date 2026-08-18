@@ -6,8 +6,12 @@ import { useEffect, useRef, useState } from "react";
 import { CloseIcon, MenuIcon } from "@/components/shared/storefront-icons";
 import { primaryNavigation, utilityNavigation } from "@/config/navigation";
 import { RegionSelector } from "@/features/region/region-selector";
+import { cn } from "@/lib/cn";
 
-export function MobileNavigation() {
+export function MobileNavigation({
+  tone = "light",
+  onOpenChange,
+}: Readonly<{ tone?: "light" | "dark"; onOpenChange?: (isOpen: boolean) => void }>) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [isOpen, setIsOpen] = useState(false);
 
@@ -19,13 +23,23 @@ export function MobileNavigation() {
     dialogRef.current?.showModal();
     document.body.style.overflow = "hidden";
     setIsOpen(true);
+    onOpenChange?.(true);
   }
 
   function closeMenu() {
     dialogRef.current?.close();
     document.body.style.removeProperty("overflow");
     setIsOpen(false);
+    onOpenChange?.(false);
   }
+
+  useEffect(() => {
+    function closeOnDesktop() {
+      if (window.innerWidth >= 1024 && dialogRef.current?.open) closeMenu();
+    }
+    window.addEventListener("resize", closeOnDesktop);
+    return () => window.removeEventListener("resize", closeOnDesktop);
+  });
 
   return (
     <>
@@ -35,7 +49,10 @@ export function MobileNavigation() {
         aria-expanded={isOpen}
         aria-controls="mobile-navigation"
         onClick={openMenu}
-        className="inline-flex size-11 items-center justify-center text-primary transition-colors duration-(--motion-micro) hover:text-highlight lg:hidden"
+        className={cn(
+          "inline-flex size-11 items-center justify-center transition-colors duration-(--motion-micro) hover:text-accent lg:hidden",
+          tone === "dark" ? "text-surface drop-shadow-sm" : "text-primary",
+        )}
       >
         <MenuIcon className="size-5" />
       </button>
@@ -51,6 +68,7 @@ export function MobileNavigation() {
         onClose={() => {
           document.body.style.removeProperty("overflow");
           setIsOpen(false);
+          onOpenChange?.(false);
         }}
         className="m-0 h-dvh max-h-none w-full max-w-none border-0 bg-primary p-0 text-secondary backdrop:bg-primary/60 lg:hidden"
       >
