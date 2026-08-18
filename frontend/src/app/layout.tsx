@@ -41,7 +41,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
     <html lang="en">
       <body className={`${manrope.variable} ${cormorant.variable}`}>
         <RegionProvider initialRegion={initialRegion}>
-          <AnnouncementBar />
+          {/* <AnnouncementBar /> */}
           <SiteHeader />
           {children}
           <SiteFooter />
