@@ -62,7 +62,7 @@ export function SiteHeader() {
         "fixed top-0 z-40 w-full transition-[background-color,border-color,box-shadow] duration-(--motion-ui) ease-(--ease-morpho)",
         overlay
           ? "border-b border-transparent bg-gradient-to-b from-primary/0 to-transparent text-surface"
-          : "border-b border-border/70 bg-background/85 text-primary shadow-[0_8px_30px_rgba(17,17,15,0.06)] backdrop-blur-xl",
+          : "border-b border-border/50 bg-background/60 text-primary shadow-[0_8px_30px_rgba(17,17,15,0.06)] backdrop-blur-xl",
       )}
     >
       <Container className="grid min-h-16 grid-cols-[1fr_auto] items-center gap-2 lg:min-h-20 lg:grid-cols-[1fr_auto_1fr] lg:gap-6">
