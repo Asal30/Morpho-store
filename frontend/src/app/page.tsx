@@ -16,7 +16,7 @@ export default function HomePage() {
   return (
     <main>
       <HomeHero />
-      <HomeImageRotator />
+      {/* <HomeImageRotator /> */}
       <CollectionShowcase />
       <LookbookSection />
       <CustomStory />

@@ -22,6 +22,7 @@ import {
   REGION_COOKIE_NAME,
   regionConfig,
 } from "@/features/region/region-config";
+import { HomeImageRotator } from "@/components/home/home-image-rotator";
 
 export const metadata: Metadata = {
   title: "Shop",
@@ -47,8 +48,8 @@ export default async function ShopPage({
 
   return (
     <main>
-      <section className="mt-20 border-b border-border bg-surface" aria-labelledby="shop-title">
-        <Container className="grid min-h-[25rem] items-stretch md:grid-cols-12">
+      <section className="mt-16 lg:mt-20 border-b border-border bg-surface" aria-labelledby="shop-title">
+        {/* <Container className="grid min-h-[25rem] items-stretch md:grid-cols-12">
           <div className="flex flex-col justify-center py-16 md:col-span-7 md:py-20 lg:col-span-8">
             <p className="text-caption font-semibold tracking-[0.22em] text-highlight uppercase">
               The collection
@@ -73,12 +74,12 @@ export default async function ShopPage({
               className="object-cover object-center"
             />
           </div>
-        </Container>
+        </Container> */}
+      <HomeImageRotator />
       </section>
-
-      <section className="bg-background py-section-sm" aria-labelledby="catalog-title">
+      <section className="bg-background" aria-labelledby="catalog-title">
         <Container>
-          <div className="mb-8 flex items-end justify-between gap-6">
+          {/* <div className="mb-8 flex items-end justify-between gap-6">
             <div>
               <p className="text-caption font-semibold tracking-[0.18em] text-highlight uppercase">
                 Current forms
@@ -87,7 +88,7 @@ export default async function ShopPage({
                 The pieces
               </h2>
             </div>
-          </div>
+          </div> */}
 
           <CatalogToolbar
             state={state}
