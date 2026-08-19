@@ -265,7 +265,7 @@ export function Customizer() {
       
       <div className="space-y-9 lg:order-1">
         <fieldset>
-          <legend className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">1. Garment</legend>
+          <legend className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">1. Category</legend>
           <div className="mt-3 grid grid-cols-2 gap-2">
             {(["Oversize", "Raglan"] as const).map((value) => (
               <Button key={value} variant={category === value ? "primary" : "outline"} onClick={() => changeCategory(value)} aria-pressed={category === value}>{value}</Button>
@@ -295,13 +295,13 @@ export function Customizer() {
         </fieldset>
 
         <div>
-          <label htmlFor="artwork" className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">4. {activeSide} artwork</label>
+          <label htmlFor="artwork" className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">4. Upload {activeSide} artwork</label>
           <Input id="artwork" type="file" accept="image/png,image/jpeg,image/webp" className="mt-3 pt-2.5" onChange={(event) => { chooseArtwork(event.target.files?.[0]); event.currentTarget.value = ""; }} />
           {artworkUrls[activeSide] ? <div className="mt-2 flex items-center justify-between gap-4 text-xs text-muted"><span className="truncate">{artwork[activeSide]?.name ?? `Saved ${activeSide} artwork`}</span><button type="button" className="font-semibold text-destructive" onClick={() => removeArtwork(activeSide)}>Remove</button></div> : null}
         </div>
 
         <div className="space-y-3">
-          <label htmlFor="custom-text" className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">5. Optional text</label>
+          <label htmlFor="custom-text" className="text-xs font-semibold tracking-[0.16em] text-primary uppercase">5. Optional {activeSide} text</label>
           <Input id="custom-text" maxLength={80} value={customText.text} placeholder="Your memory, in words" onChange={(event) => setCustomText((current) => ({ ...current, text: event.target.value, placement: activeSide }))} />
           <div className="grid grid-cols-2 gap-3">
             <Select aria-label="Text font" value={customText.font} onChange={(event) => setCustomText((current) => ({ ...current, font: event.target.value }))}>{customizerFonts.map((font) => <option key={font}>{font}</option>)}</Select>

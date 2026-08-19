@@ -47,7 +47,7 @@ export default async function ShopPage({
 
   return (
     <main>
-      <section className="border-b border-border bg-surface" aria-labelledby="shop-title">
+      <section className="mt-20 border-b border-border bg-surface" aria-labelledby="shop-title">
         <Container className="grid min-h-[25rem] items-stretch md:grid-cols-12">
           <div className="flex flex-col justify-center py-16 md:col-span-7 md:py-20 lg:col-span-8">
             <p className="text-caption font-semibold tracking-[0.22em] text-highlight uppercase">

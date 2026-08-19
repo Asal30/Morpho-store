@@ -31,12 +31,12 @@ interface GarmentConfiguration {
   defaultLogo: DefaultLogoConfiguration;
 }
 
-const singleShirtFront = { x: 35, y: 29, width: 30, height: 34 };
-const singleShirtBack = { x: 35, y: 27, width: 30, height: 36 };
+const singleShirtFront = { x: 32, y: 30, width: 37, height: 38 };
+const singleShirtBack = { x: 30, y: 25, width: 40, height: 48 };
 
 export const customizationConfig: Record<CustomizationCategory, GarmentConfiguration> = {
   Oversize: {
-    defaultLogo: { side: "front", x: 0.5, y: 0.15, width: 0.45 },
+    defaultLogo: { side: "front", x: 0.5, y: 0.15, width: 0.40 },
     sizes: ["XS", "S", "M", "L", "XL"],
     colors: [
       ["Black", "#111111", "black"],
@@ -56,7 +56,7 @@ export const customizationConfig: Record<CustomizationCategory, GarmentConfigura
     })),
   },
   Raglan: {
-    defaultLogo: { side: "front", x: 0.5, y: 0.18, width: 0.45 },
+    defaultLogo: { side: "front", x: 0.5, y: 0.18, width: 0.40 },
     sizes: ["S", "M", "L", "2XL"],
     colors: [
       ["Black", "#111111", "black"],
