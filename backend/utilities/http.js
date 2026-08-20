@@ -15,6 +15,7 @@ export function sendError(res, status, message) {
 }
 
 export function handleControllerError(error, res) {
+    if (error?.status) return sendError(res, error.status, error.message)
     if (error?.name === "ValidationError" || error?.name === "CastError") {
         return sendError(res, 400, error.message)
     }

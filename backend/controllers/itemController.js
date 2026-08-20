@@ -1,74 +1,28 @@
 import Item from "../models/itemModel.js";
+import { configureCloudinary, deleteCloudinaryImage, uploadProductImage } from "../config/cloudinary.js";
 import { handleControllerError, isValidObjectId, parseBoolean, sendData, sendError } from "../utilities/http.js";
+import { parseImageMetadata, parseItemInput } from "../utilities/itemInput.js";
 
-export async function getItems(req, res) {
+const folder = (id) => `morpho/products/${String(id).replace(/[^a-z0-9_-]/gi, "-")}`
+const cleanup = (images) => Promise.allSettled(images.map((image) => deleteCloudinaryImage(image.publicId)))
+async function uploadImages(files = [], metadata, itemID) {
+    if (!files.length) return []
+    if (!configureCloudinary()) throw Object.assign(new Error("Product image upload is not configured"), { status : 503 })
+    const uploaded = []
     try {
-        const filter = {}
-        for (const field of ["category", "theme", "color"]) {
-            if (req.query[field]) filter[field] = req.query[field]
-        }
-        if (req.query.size) filter.availableSizes = req.query.size
-
-        for (const field of ["isFeatured", "isAvailable"]) {
-            const value = parseBoolean(req.query[field])
-            if (value === null) return sendError(res, 400, `${field} must be true or false`)
-            if (value !== undefined) filter[field] = value
-        }
-
-        const items = await Item.find(filter).sort({ createdAt : -1 })
-        return sendData(res, items)
-    } catch (error) {
-        return handleControllerError(error, res)
-    }
+        for (let i = 0; i < files.length; i++) { const result = await uploadProductImage(files[i], folder(itemID)); uploaded.push({ image : result.secure_url, publicId : result.public_id, ...metadata[i] }) }
+        if (!uploaded.some((image) => image.isPrimary)) uploaded[0].isPrimary = true
+        return uploaded
+    } catch (error) { await cleanup(uploaded); throw error }
 }
+const fail = (error, res) => error.status ? sendError(res, error.status, error.message) : handleControllerError(error, res)
 
-export async function getItem(req, res) {
-    try {
-        if (!isValidObjectId(req.params.id)) return sendError(res, 400, "Invalid item ID")
-        const item = await Item.findById(req.params.id)
-        if (!item) return sendError(res, 404, "Item not found")
-        return sendData(res, item)
-    } catch (error) {
-        return handleControllerError(error, res)
-    }
-}
-
-export async function getItemBySlug(req, res) {
-    try {
-        const item = await Item.findOne({ slug : req.params.slug.toLowerCase() })
-        if (!item) return sendError(res, 404, "Item not found")
-        return sendData(res, item)
-    } catch (error) {
-        return handleControllerError(error, res)
-    }
-}
-
-export async function createItem(req, res) {
-    try {
-        return sendData(res, await Item.create(req.body), 201)
-    } catch (error) {
-        return handleControllerError(error, res)
-    }
-}
-
-export async function updateItem(req, res) {
-    try {
-        if (!isValidObjectId(req.params.id)) return sendError(res, 400, "Invalid item ID")
-        const item = await Item.findByIdAndUpdate(req.params.id, req.body, { new : true, runValidators : true })
-        if (!item) return sendError(res, 404, "Item not found")
-        return sendData(res, item)
-    } catch (error) {
-        return handleControllerError(error, res)
-    }
-}
-
-export async function archiveItem(req, res) {
-    try {
-        if (!isValidObjectId(req.params.id)) return sendError(res, 400, "Invalid item ID")
-        const item = await Item.findByIdAndUpdate(req.params.id, { isAvailable : false }, { new : true })
-        if (!item) return sendError(res, 404, "Item not found")
-        return sendData(res, item)
-    } catch (error) {
-        return handleControllerError(error, res)
-    }
-}
+export async function getItems(req, res) { try { const filter = {}; for (const field of ["category", "theme", "color"]) if (req.query[field]) filter[field] = req.query[field]; if (req.query.size) filter.availableSizes = req.query.size; for (const field of ["isFeatured", "isAvailable"]) { const value = parseBoolean(req.query[field]); if (value === null) return sendError(res, 400, `${field} must be true or false`); if (value !== undefined) filter[field] = value } return sendData(res, await Item.find(filter).sort({ createdAt : -1 })) } catch (error) { return handleControllerError(error, res) } }
+export async function getItem(req, res) { try { if (!isValidObjectId(req.params.id)) return sendError(res, 400, "Invalid item ID"); const item = await Item.findById(req.params.id); return item ? sendData(res, item) : sendError(res, 404, "Item not found") } catch (error) { return handleControllerError(error, res) } }
+export async function getItemBySlug(req, res) { try { const item = await Item.findOne({ slug : String(req.params.slug).toLowerCase() }); return item ? sendData(res, item) : sendError(res, 404, "Item not found") } catch (error) { return handleControllerError(error, res) } }
+export async function createItem(req, res) { let images = []; try { const input = parseItemInput(req.body); const missing = ["itemID", "name", "slug", "category", "theme", "color", "price", "availableSizes"].filter((field) => input[field] === undefined || input[field] === ""); if (missing.length) return sendError(res, 400, `Missing required fields: ${missing.join(", ")}`); images = await uploadImages(req.files, parseImageMetadata(req.body.imageMetadata, req.files?.length ?? 0), input.itemID); return sendData(res, await Item.create({ ...input, images }), 201) } catch (error) { await cleanup(images); return fail(error, res) } }
+export async function updateItem(req, res) { try { if (!isValidObjectId(req.params.id)) return sendError(res, 400, "Invalid item ID"); const item = await Item.findById(req.params.id); if (!item) return sendError(res, 404, "Item not found"); Object.assign(item, parseItemInput(req.body, item)); await item.save(); return sendData(res, item) } catch (error) { return fail(error, res) } }
+export async function addItemImages(req, res) { let uploaded = []; try { if (!isValidObjectId(req.params.id)) return sendError(res, 400, "Invalid item ID"); const item = await Item.findById(req.params.id); if (!item) return sendError(res, 404, "Item not found"); if (!req.files?.length) return sendError(res, 400, "At least one image is required"); uploaded = await uploadImages(req.files, parseImageMetadata(req.body.imageMetadata, req.files.length), item.itemID); if (uploaded.some((image) => image.isPrimary)) item.images.forEach((image) => { image.isPrimary = false }); item.images.push(...uploaded); await item.save(); return sendData(res, item) } catch (error) { await cleanup(uploaded); return fail(error, res) } }
+export async function updateImageMetadata(req, res) { try { if (!isValidObjectId(req.params.id)) return sendError(res, 400, "Invalid item ID"); const item = await Item.findById(req.params.id); if (!item) return sendError(res, 404, "Item not found"); let operations; try { operations = typeof req.body.images === "string" ? JSON.parse(req.body.images) : req.body.images } catch { return sendError(res, 400, "images must be valid JSON") } if (!Array.isArray(operations)) return sendError(res, 400, "images must be an array"); for (const operation of operations) { const image = item.images.id(operation.id); if (!image) return sendError(res, 400, `Unknown image ID: ${operation.id}`); if (operation.alt !== undefined) image.alt = String(operation.alt).slice(0, 200); if (operation.displayOrder !== undefined) image.displayOrder = Number(operation.displayOrder); if (operation.isPrimary === true) { item.images.forEach((entry) => { entry.isPrimary = false }); image.isPrimary = true } } await item.save(); return sendData(res, item) } catch (error) { return fail(error, res) } }
+export async function deleteItemImage(req, res) { try { if (!isValidObjectId(req.params.id) || !isValidObjectId(req.params.imageId)) return sendError(res, 400, "Invalid item or image ID"); const item = await Item.findById(req.params.id); if (!item) return sendError(res, 404, "Item not found"); const image = item.images.id(req.params.imageId); if (!image) return sendError(res, 404, "Product image not found"); const publicId = image.publicId; image.deleteOne(); if (item.images.length && !item.images.some((entry) => entry.isPrimary)) item.images[0].isPrimary = true; await item.save(); if (publicId) await deleteCloudinaryImage(publicId); return sendData(res, item) } catch (error) { return fail(error, res) } }
+export async function archiveItem(req, res) { try { if (!isValidObjectId(req.params.id)) return sendError(res, 400, "Invalid item ID"); const item = await Item.findByIdAndUpdate(req.params.id, { isAvailable : false }, { new : true }); return item ? sendData(res, item) : sendError(res, 404, "Item not found") } catch (error) { return handleControllerError(error, res) } }

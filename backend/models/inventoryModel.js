@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { ALL_SIZES } from "../config/catalog.js";
 
 const inventoryModel = mongoose.Schema(
     {
@@ -10,13 +11,17 @@ const inventoryModel = mongoose.Schema(
         size : {
             type : String,
             required : true,
-            enum : ["2XS", "XS", "S", "M", "L", "XL", "2XL"]
+            enum : ALL_SIZES
         },
         quantity : {
             type : Number,
             required : true,
             default : 0,
-            min : 0
+            min : 0,
+            validate : {
+                validator : function (quantity) { return quantity - (this.sold ?? 0) - (this.reserved ?? 0) >= 0 },
+                message : "Available stock cannot be negative"
+            }
         },
         sold : {
             type : Number,
@@ -43,6 +48,8 @@ const inventoryModel = mongoose.Schema(
 )
 
 inventoryModel.index({ item : 1, size : 1 }, { unique : true })
+inventoryModel.virtual("availableStock").get(function () { return this.quantity - this.sold - this.reserved })
+inventoryModel.set("toJSON", { virtuals : true })
 
 const Inventory = mongoose.model("inventory", inventoryModel)
 

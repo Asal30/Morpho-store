@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { ALL_SIZES, CATEGORIES, COLORS_BY_CATEGORY, THEMES, validateCategoryColor } from "../config/catalog.js";
 
 const itemModel = mongoose.Schema(
     {
@@ -23,18 +24,18 @@ const itemModel = mongoose.Schema(
         category : {
             type : String,
             required : true,
-            enum : ["Oversize", "Raglan"]
+            enum : CATEGORIES
         },
         theme : {
             type : String,
             required : true,
-            enum : ["Toon Art", "Anime", "Motor", "Street Art", "Essentials", "Customized"]
+            enum : THEMES
         },
         availableSizes : {
             type : [
                 {
                     type : String,
-                    enum : ["2XS", "XS", "S", "M", "L", "XL", "2XL"]
+                    enum : ALL_SIZES
                 }
             ],
             required : true
@@ -42,7 +43,11 @@ const itemModel = mongoose.Schema(
         color : {
             type : String,
             required : true,
-            enum : ["Black", "White", "Navy Blue", "Aqua Blue", "Mint Green", "Baby Pink", "Yellow", "Blue", "Red", "Pink"]
+            enum : [...new Set(Object.values(COLORS_BY_CATEGORY).flat())],
+            validate : {
+                validator : function (color) { return !this.category || validateCategoryColor(this.category, color) },
+                message : function (properties) { return `${properties.value} is not available for this category` }
+            }
         },
         price : {
             type : Number,
@@ -56,6 +61,7 @@ const itemModel = mongoose.Schema(
                     required : true,
                     trim : true
                 },
+                publicId : { type : String, trim : true },
                 alt : {
                     type : String,
                     default : "",
@@ -96,6 +102,10 @@ const itemModel = mongoose.Schema(
         timestamps : true
     }
 )
+
+itemModel.pre("validate", function () {
+    if (this.images?.filter((image) => image.isPrimary).length > 1) this.invalidate("images", "Only one image may be primary")
+})
 
 const Item = mongoose.model("items", itemModel)
 

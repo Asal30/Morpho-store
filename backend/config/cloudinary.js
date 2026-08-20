@@ -28,3 +28,12 @@ export function uploadArtworkBuffer(file, folder) {
         stream.end(file.buffer)
     })
 }
+
+export function uploadProductImage(file, folder) {
+    return uploadArtworkBuffer(file, folder)
+}
+
+export async function deleteCloudinaryImage(publicId) {
+    if (!publicId) return
+    await cloudinary.uploader.destroy(publicId, { resource_type : "image", invalidate : true })
+}

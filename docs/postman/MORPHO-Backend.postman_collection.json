@@ -1,0 +1,42 @@
+{
+  "info": { "name": "MORPHO Backend", "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json", "description": "Admin product-image and size-level inventory workflow. /api/items is the canonical product catalog API." },
+  "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{adminToken}}", "type": "string" }] },
+  "item": [
+    { "name": "Health", "item": [
+      { "name": "Health", "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/health" } },
+      { "name": "Database Readiness", "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/ready" } }
+    ]},
+    { "name": "Auth", "item": [
+      { "name": "Admin Login", "event": [{ "listen": "test", "script": { "exec": ["const json = pm.response.json();", "if (json.success && json.data.token) pm.environment.set('adminToken', json.data.token);"] } }], "request": { "auth": { "type": "noauth" }, "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}" }, "url": "{{baseUrl}}/api/users/login" } },
+      { "name": "Current User", "request": { "method": "GET", "url": "{{baseUrl}}/api/users/me" } }
+    ]},
+    { "name": "Items", "item": [
+      { "name": "Create Oversize Product With Multiple Images", "event": [{ "listen": "test", "script": { "exec": ["const d=pm.response.json().data;", "if(d){pm.environment.set('itemId',d._id);pm.environment.set('itemSlug',d.slug);if(d.images?.[0])pm.environment.set('imageId',d.images[0]._id);}"] } }], "request": { "method": "POST", "body": { "mode": "formdata", "formdata": [
+        { "key": "itemID", "value": "MOR-O-001", "type": "text" }, { "key": "name", "value": "Morpho Toon Memory Oversize", "type": "text" }, { "key": "slug", "value": "morpho-toon-memory-oversize", "type": "text" }, { "key": "category", "value": "Oversize", "type": "text" }, { "key": "theme", "value": "Toon Art", "type": "text" }, { "key": "color", "value": "Black", "type": "text" }, { "key": "price", "value": "2500", "type": "text" }, { "key": "availableSizes", "value": "[\"S\",\"M\",\"L\",\"XL\",\"2XL\"]", "type": "text" }, { "key": "description", "value": "Premium oversized MORPHO T-shirt.", "type": "text" }, { "key": "isAvailable", "value": "true", "type": "text" }, { "key": "isFeatured", "value": "true", "type": "text" }, { "key": "imageMetadata", "value": "[{\"alt\":\"Front view\",\"isPrimary\":true,\"displayOrder\":0},{\"alt\":\"Back view\",\"isPrimary\":false,\"displayOrder\":1}]", "type": "text" }, { "key": "images", "type": "file", "src": [] }, { "key": "images", "type": "file", "src": [] }
+      ]}, "url": "{{baseUrl}}/api/items" } },
+      { "name": "Create Raglan Product With Multiple Images", "request": { "method": "POST", "body": { "mode": "formdata", "formdata": [
+        { "key": "itemID", "value": "MOR-R-001", "type": "text" }, { "key": "name", "value": "Morpho Anime Raglan", "type": "text" }, { "key": "slug", "value": "morpho-anime-raglan", "type": "text" }, { "key": "category", "value": "Raglan", "type": "text" }, { "key": "theme", "value": "Anime", "type": "text" }, { "key": "color", "value": "Red", "type": "text" }, { "key": "price", "value": "2200", "type": "text" }, { "key": "availableSizes", "value": "[\"S\",\"M\",\"L\",\"XL\",\"2XL\"]", "type": "text" }, { "key": "description", "value": "Premium unisex MORPHO raglan T-shirt.", "type": "text" }, { "key": "isAvailable", "value": "true", "type": "text" }, { "key": "isFeatured", "value": "false", "type": "text" }, { "key": "imageMetadata", "value": "[{\"alt\":\"Front view\",\"isPrimary\":true,\"displayOrder\":0},{\"alt\":\"Back view\",\"displayOrder\":1}]", "type": "text" }, { "key": "images", "type": "file", "src": [] }, { "key": "images", "type": "file", "src": [] }
+      ]}, "url": "{{baseUrl}}/api/items" } },
+      { "name": "List Items", "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/api/items" } },
+      { "name": "Filter Items", "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/api/items?category=Oversize&isAvailable=true&size=M" } },
+      { "name": "Get Item by ID", "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/api/items/{{itemId}}" } },
+      { "name": "Get Item by Slug", "request": { "auth": { "type": "noauth" }, "method": "GET", "url": "{{baseUrl}}/api/items/slug/{{itemSlug}}" } },
+      { "name": "Update Item", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"price\":2500,\"isFeatured\":true}" }, "url": "{{baseUrl}}/api/items/{{itemId}}" } },
+      { "name": "Upload Additional Images", "request": { "method": "POST", "body": { "mode": "formdata", "formdata": [{ "key": "imageMetadata", "value": "[{\"alt\":\"Detail view\",\"displayOrder\":2}]", "type": "text" }, { "key": "images", "type": "file", "src": [] }] }, "url": "{{baseUrl}}/api/items/{{itemId}}/images" } },
+      { "name": "Update Image Metadata", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"images\":[{\"id\":\"{{imageId}}\",\"alt\":\"Primary product view\",\"isPrimary\":true,\"displayOrder\":0}]}" }, "url": "{{baseUrl}}/api/items/{{itemId}}/images" } },
+      { "name": "Delete Product Image", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/items/{{itemId}}/images/{{imageId}}" } },
+      { "name": "Archive Item", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/items/{{itemId}}" } }
+    ]},
+    { "name": "Inventory", "item": [
+      { "name": "Create S Stock", "event": [{ "listen": "test", "script": { "exec": ["const d=pm.response.json().data;if(d)pm.environment.set('inventoryId',d._id);"] } }], "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"item\":\"{{itemId}}\",\"size\":\"S\",\"quantity\":2}" }, "url": "{{baseUrl}}/api/inventory" } },
+      { "name": "Create M Stock", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"item\":\"{{itemId}}\",\"size\":\"M\",\"quantity\":4}" }, "url": "{{baseUrl}}/api/inventory" } },
+      { "name": "Create L Stock", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"item\":\"{{itemId}}\",\"size\":\"L\",\"quantity\":3}" }, "url": "{{baseUrl}}/api/inventory" } },
+      { "name": "Create XL Stock", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"item\":\"{{itemId}}\",\"size\":\"XL\",\"quantity\":1}" }, "url": "{{baseUrl}}/api/inventory" } },
+      { "name": "Create 2XL Stock", "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"item\":\"{{itemId}}\",\"size\":\"2XL\",\"quantity\":0}" }, "url": "{{baseUrl}}/api/inventory" } },
+      { "name": "List Inventory", "request": { "method": "GET", "url": "{{baseUrl}}/api/inventory" } },
+      { "name": "Get Item Inventory", "request": { "method": "GET", "url": "{{baseUrl}}/api/inventory/item/{{itemId}}" } },
+      { "name": "Update Inventory", "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\"quantity\":5,\"sold\":0,\"reserved\":1}" }, "url": "{{baseUrl}}/api/inventory/{{inventoryId}}" } },
+      { "name": "Delete Inventory Record", "request": { "method": "DELETE", "url": "{{baseUrl}}/api/inventory/{{inventoryId}}" } }
+    ]}
+  ]
+}
